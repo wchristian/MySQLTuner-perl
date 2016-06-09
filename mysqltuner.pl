@@ -495,7 +495,7 @@ sub update_tuner_version {
     my $receivedScripts = 0;
     my $httpcli         = get_http_cli();
 
-    foreach my $script (@scripts) {
+    for my $script (@scripts) {
         if ( $httpcli =~ /curl$/ ) {
             debugprint "$httpcli is available.";
 
@@ -839,7 +839,7 @@ sub get_tuning_info {
     @infoconn =
       grep { !/Threads:/ and !/Connection id:/ and !/pager:/ and !/Using/ }
       @infoconn;
-    foreach my $line (@infoconn) {
+    for my $line (@infoconn) {
         if ( $line =~ /\s*(.*):\s*(.*)/ ) {
             debugprint "$1 => $2";
             $tkey = $1;
@@ -863,7 +863,7 @@ sub arr2hash {
     my $harr = shift;
     my $sep  = shift;
     $sep = '\s' unless defined($sep);
-    foreach my $line (@$harr) {
+    for my $line (@$harr) {
         next if ( $line =~ m/^\*\*\*\*\*\*\*/ );
         $line =~ /([a-zA-Z_]*)\s*$sep\s*(.*)/;
         $$href{$1} = $2;
@@ -911,7 +911,7 @@ sub get_all_vars {
     # check SHOW ENGINES and set corresponding old style variables.
     # Also works around MySQL bug #59393 wrt. skip-innodb
     my @mysqlenginelist = select_array "SHOW ENGINES";
-    foreach my $line (@mysqlenginelist) {
+    for my $line (@mysqlenginelist) {
         if ( $line =~ /^([a-zA-Z_]+)\s+(\S+)/ ) {
             my $engine = lc($1);
 
@@ -932,7 +932,7 @@ sub get_all_vars {
     $result{'Replication'}{'Status'} = \%myrepl;
     my @mysqlslaves = select_array "SHOW SLAVE HOSTS";
     my @lineitems   = ();
-    foreach my $line (@mysqlslaves) {
+    for my $line (@mysqlslaves) {
         debugprint "L: $line ";
         @lineitems = split /\s+/, $line;
         $myslaves{ $lineitems[0] } = $line;
@@ -1077,7 +1077,7 @@ sub get_fs_info() {
     my @iinfo = `df -Pi| grep '%'`;
     shift @iinfo;
     map { s/.*\s(\d+)%\s+(.*)/$1\t$2/g } @sinfo;
-    foreach my $info (@sinfo) {
+    for my $info (@sinfo) {
         next if $info =~ m{(\d+)\t/(run|dev|sys|proc)($|/)};
         if ( $info =~ /(\d+)\t(.*)/ ) {
             if ( $1 > 85 ) {
@@ -1091,7 +1091,7 @@ sub get_fs_info() {
     }
 
     map { s/.*\s(\d+)%\s+(.*)/$1\t$2/g } @iinfo;
-    foreach my $info (@iinfo) {
+    for my $info (@iinfo) {
         next if $info =~ m{(\d+)\t/(run|dev|sys|proc)($|/)};
         if ( $info =~ /(\d+)\t(.*)/ ) {
             if ( $1 > 85 ) {
@@ -1111,7 +1111,7 @@ sub merge_hash {
     my $h1     = shift;
     my $h2     = shift;
     my %result = {};
-    foreach my $substanceref ( $h1, $h2 ) {
+    for my $substanceref ( $h1, $h2 ) {
         while ( my ( $k, $v ) = each %$substanceref ) {
             next if ( exists $result{$k} );
             $result{$k} = $v;
@@ -1159,7 +1159,7 @@ sub get_kernel_info() {
         'sunrpc.tcp_max_slot_table_entries', 'sunrpc.tcp_slot_table_entries',
         'vm.swappiness' );
     infoprint "Information about kernel tuning:";
-    foreach my $param (@params) {
+    for my $param (@params) {
         infocmd_tab("sysctl $param");
     }
     if ( `sysctl -n vm.swappiness` > 10 ) {
@@ -1298,7 +1298,7 @@ sub system_recommendations {
         }
     }
 
-    foreach my $banport (@banned_ports) {
+    for my $banport (@banned_ports) {
         if ( is_open_port($banport) ) {
             badprint "Banned port: $banport is opened..";
             push @generalrec,
@@ -1332,7 +1332,7 @@ sub security_recommendations {
 
     #exit 0;
     if (@mysqlstatlist) {
-        foreach my $line ( sort @mysqlstatlist ) {
+        for my $line ( sort @mysqlstatlist ) {
             chomp($line);
             badprint "User '$line' is an anonymous account.";
         }
@@ -1354,7 +1354,7 @@ sub security_recommendations {
     @mysqlstatlist = select_array
 "SELECT CONCAT(user, '\@', host) FROM mysql.user WHERE ($PASS_COLUMN_NAME = '' OR $PASS_COLUMN_NAME IS NULL) AND plugin NOT IN ('unix_socket', 'win_socket')";
     if (@mysqlstatlist) {
-        foreach my $line ( sort @mysqlstatlist ) {
+        for my $line ( sort @mysqlstatlist ) {
             chomp($line);
             badprint "User '" . $line . "' has no password set.";
         }
@@ -1381,7 +1381,7 @@ sub security_recommendations {
     @mysqlstatlist = select_array
 "SELECT CONCAT(user, '\@', host) FROM mysql.user WHERE CAST($PASS_COLUMN_NAME as Binary) = PASSWORD(user) OR CAST($PASS_COLUMN_NAME as Binary) = PASSWORD(UPPER(user)) OR CAST($PASS_COLUMN_NAME as Binary) = PASSWORD(UPPER(LEFT(User, 1)) + SUBSTRING(User, 2, LENGTH(User)))";
     if (@mysqlstatlist) {
-        foreach my $line ( sort @mysqlstatlist ) {
+        for my $line ( sort @mysqlstatlist ) {
             chomp($line);
             badprint "User '" . $line . "' has user name as password.";
         }
@@ -1393,7 +1393,7 @@ sub security_recommendations {
     @mysqlstatlist = select_array
       "SELECT CONCAT(user, '\@', host) FROM mysql.user WHERE HOST='%'";
     if (@mysqlstatlist) {
-        foreach my $line ( sort @mysqlstatlist ) {
+        for my $line ( sort @mysqlstatlist ) {
             chomp($line);
             badprint "User '" . $line . "' hasn't specific host restriction.";
         }
@@ -1412,7 +1412,7 @@ sub security_recommendations {
     my $nbins = 0;
     my $passreq;
     if (@passwords) {
-        foreach my $pass (@passwords) {
+        for my $pass (@passwords) {
             $pass =~ s/\s//g;
             chomp($pass);
 
@@ -1431,7 +1431,7 @@ sub security_recommendations {
               . $pass . "')))";
             debugprint "There is " . scalar(@mysqlstatlist) . " items.";
             if (@mysqlstatlist) {
-                foreach my $line (@mysqlstatlist) {
+                for my $line (@mysqlstatlist) {
                     chomp($line);
                     badprint "User '" . $line
                       . "' is using weak password: $pass in a lower, upper or capitalize derivative version.";
@@ -1603,7 +1603,7 @@ sub check_storage_engines {
     if ( mysql_version_ge( 5, 5 ) ) {
         my @engineresults = select_array
 "SELECT ENGINE,SUPPORT FROM information_schema.ENGINES ORDER BY ENGINE ASC";
-        foreach my $line (@engineresults) {
+        for my $line (@engineresults) {
             my ( $engine, $engineenabled );
             ( $engine, $engineenabled ) = $line =~ /([a-zA-Z_]*)\s+([a-zA-Z]+)/;
             $result{'Engine'}{$engine}{'Enabled'} = $engineenabled;
@@ -1616,7 +1616,7 @@ sub check_storage_engines {
     elsif ( mysql_version_ge( 5, 1, 5 ) ) {
         my @engineresults = select_array
 "SELECT ENGINE,SUPPORT FROM information_schema.ENGINES WHERE ENGINE NOT IN ('performance_schema','MyISAM','MERGE','MEMORY') ORDER BY ENGINE ASC";
-        foreach my $line (@engineresults) {
+        for my $line (@engineresults) {
             my ( $engine, $engineenabled );
             ( $engine, $engineenabled ) = $line =~ /([a-zA-Z_]*)\s+([a-zA-Z]+)/;
             $result{'Engine'}{$engine}{'Enabled'} = $engineenabled;
@@ -1666,7 +1666,7 @@ sub check_storage_engines {
 "SELECT ENGINE,SUM(DATA_LENGTH+INDEX_LENGTH),COUNT(ENGINE),SUM(DATA_LENGTH),SUM(INDEX_LENGTH) FROM information_schema.TABLES WHERE TABLE_SCHEMA NOT IN ('information_schema', 'performance_schema', 'mysql') AND ENGINE IS NOT NULL GROUP BY ENGINE ORDER BY ENGINE ASC;";
 
         my ( $engine, $size, $count, $dsize, $isize );
-        foreach my $line (@templist) {
+        for my $line (@templist) {
             ( $engine, $size, $count, $dsize, $isize ) =
               $line =~ /([a-zA-Z_]*)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/;
             $size  = 0 unless defined($size);
@@ -1697,7 +1697,7 @@ sub check_storage_engines {
         my @tblist;
 
         # Now we build a database list, and loop through it to get storage engine stats for tables
-        foreach my $db (@dblist) {
+        for my $db (@dblist) {
             chomp($db);
             if (   $db eq "information_schema"
                 or $db eq "performance_schema"
@@ -1719,7 +1719,7 @@ sub check_storage_engines {
 
         # Parse through the table list to generate storage engine counts/statistics
         $fragtables = 0;
-        foreach my $tbl (@tblist) {
+        for my $tbl (@tblist) {
             debugprint "Data dump " . Dumper(@$tbl);
             my ( $engine, $size, $datafree ) = @$tbl;
             next if $engine eq 'NULL';
@@ -1778,7 +1778,7 @@ sub check_storage_engines {
         push @generalrec,
           "Run OPTIMIZE TABLE to defragment tables for better performance";
         my $total_free = 0;
-        foreach my $table_line ( @{ $result{'Tables'}{'Fragmented tables'} } ) {
+        for my $table_line ( @{ $result{'Tables'}{'Fragmented tables'} } ) {
             my ( $table_name, $data_free ) = split( /\s+/, $table_line );
             $data_free = $data_free / 1024 / 1024;
             $total_free += $data_free;
@@ -1800,7 +1800,7 @@ sub check_storage_engines {
     $result{'MaxInt'} = $maxint;
 
     # Now we use a database list, and loop through it to get storage engine stats for tables
-    foreach my $db (@dblist) {
+    for my $db (@dblist) {
         chomp($db);
 
         if ( !$tblist{$db} ) {
@@ -1821,8 +1821,8 @@ sub check_storage_engines {
 
     my @dbnames = keys %tblist;
 
-    foreach my $db (@dbnames) {
-        foreach my $tbl ( @{ $tblist{$db} } ) {
+    for my $db (@dbnames) {
+        for my $tbl ( @{ $tblist{$db} } ) {
             my ( $name, $autoincrement ) = @$tbl;
 
             if ( $autoincrement =~ /^\d+?$/ ) {
@@ -2968,7 +2968,7 @@ sub mariadb_galera {
     }
     infoprint "Galera is enabled.";
     debugprint "Galera variables:";
-    foreach my $gvar ( keys %myvar ) {
+    for my $gvar ( keys %myvar ) {
         next unless $gvar =~ /^wsrep.*/;
         next if $gvar eq 'wsrep_provider_options';
         debugprint "\t" . trim($gvar) . " = " . $myvar{$gvar};
@@ -2976,11 +2976,11 @@ sub mariadb_galera {
 
     debugprint "Galera wsrep provider Options:";
     my @galera_options = get_wsrep_options;
-    foreach my $gparam (@galera_options) {
+    for my $gparam (@galera_options) {
         debugprint "\t" . trim($gparam);
     }
     debugprint "Galera status:";
-    foreach my $gstatus ( keys %mystat ) {
+    for my $gstatus ( keys %mystat ) {
         next unless $gstatus =~ /^wsrep.*/;
         debugprint "\t" . trim($gstatus) . " = " . $mystat{$gstatus};
     }
@@ -2992,7 +2992,7 @@ sub mariadb_galera {
 
     if ( scalar(@primaryKeysNbTables) > 0 ) {
         badprint "Following table(s) don't have primary key:";
-        foreach my $badtable (@primaryKeysNbTables) {
+        for my $badtable (@primaryKeysNbTables) {
             badprint "\t$badtable";
         }
     }
@@ -3006,7 +3006,7 @@ sub mariadb_galera {
         badprint "Following table(s) are not InnoDB table:";
         push @generalrec,
           "Ensure that all table(s) are InnoDB tables for Galera replication";
-        foreach my $badtable (@nonInnoDbTables) {
+        for my $badtable (@nonInnoDbTables) {
             badprint "\t$badtable";
         }
     }
@@ -3450,7 +3450,7 @@ sub mysql_databases {
     $result{'Databases'}{'All databases'}{'Total Size'} = $totaldbinfo[3];
     print "\n" unless ( $opt{'silent'} or $opt{'json'} );
 
-    foreach (@dblist) {
+    for (@dblist) {
         chomp($_);
         if (   $_ eq "information_schema"
             or $_ eq "performance_schema"
@@ -3624,7 +3624,7 @@ LIMIT 10;
 ENDSQL
     my @idxinfo = select_array($selIdxReq);
     infoprint "Worst selectivity indexes:";
-    foreach (@idxinfo) {
+    for (@idxinfo) {
         debugprint "$_";
         my @info = split /\s/;
         infoprint "Index: " . $info[1] . "";
@@ -3665,7 +3665,7 @@ ENDSQL
     @idxinfo = select_array($selIdxReq);
     infoprint "Unused indexes:";
     push @generalrec, "Remove unused indexes." if ( scalar(@idxinfo) > 0 );
-    foreach (@idxinfo) {
+    for (@idxinfo) {
         debugprint "$_";
         my @info = split /\s/;
         badprint "Index: $info[1] on $info[0] is not used.";
@@ -3678,7 +3678,7 @@ sub make_recommendations {
     subheaderprint "Recommendations";
     if ( @generalrec > 0 ) {
         prettyprint "General recommendations:";
-        foreach (@generalrec) { prettyprint "    " . $_ . ""; }
+        for (@generalrec) { prettyprint "    " . $_ . ""; }
     }
     if ( @adjvars > 0 ) {
         prettyprint "Variables to adjust:";
@@ -3687,7 +3687,7 @@ sub make_recommendations {
               "  *** MySQL's maximum memory usage is dangerously high ***\n"
               . "  *** Add RAM before increasing MySQL buffer variables ***";
         }
-        foreach (@adjvars) { prettyprint "    " . $_ . ""; }
+        for (@adjvars) { prettyprint "    " . $_ . ""; }
     }
     if ( @generalrec == 0 && @adjvars == 0 ) {
         prettyprint "No additional performance recommendations are available.";
