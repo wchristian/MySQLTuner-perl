@@ -272,53 +272,29 @@ sub infoprinthcmd {
 
 # Calculates the parameter passed in bytes, then rounds it to one decimal place
 sub hr_bytes {
-    my $num = shift;
-    if ( $num >= ( 1024**3 ) ) {    #GB
-        return sprintf( "%.1f", ( $num / ( 1024**3 ) ) ) . "G";
-    }
-    elsif ( $num >= ( 1024**2 ) ) {    #MB
-        return sprintf( "%.1f", ( $num / ( 1024**2 ) ) ) . "M";
-    }
-    elsif ( $num >= 1024 ) {           #KB
-        return sprintf( "%.1f", ( $num / 1024 ) ) . "K";
-    }
-    else {
-        return $num . "B";
-    }
+    my ($num) = @_;
+    return sprintf "%.1fG", $num / 1024**3 if $num >= 1024**3;    #GB
+    return sprintf "%.1fM", $num / 1024**2 if $num >= 1024**2;    #MB
+    return sprintf "%.1fK", $num / 1024    if $num >= 1024;       #KB
+    return $num . "B";
 }
 
 # Calculates the parameter passed in bytes, then rounds it to the nearest integer
 sub hr_bytes_rnd {
-    my $num = shift;
-    if ( $num >= ( 1024**3 ) ) {       #GB
-        return int( ( $num / ( 1024**3 ) ) ) . "G";
-    }
-    elsif ( $num >= ( 1024**2 ) ) {    #MB
-        return int( ( $num / ( 1024**2 ) ) ) . "M";
-    }
-    elsif ( $num >= 1024 ) {           #KB
-        return int( ( $num / 1024 ) ) . "K";
-    }
-    else {
-        return $num . "B";
-    }
+    my ($num) = @_;
+    return int( $num / 1024**3 ) . "G" if $num >= 1024**3;        #GB
+    return int( $num / 1024**2 ) . "M" if $num >= 1024**2;        #MB
+    return int( $num / 1024 ) . "K"    if $num >= 1024;           #KB
+    return $num . "B";
 }
 
 # Calculates the parameter passed to the nearest power of 1000, then rounds it to the nearest integer
 sub hr_num {
-    my $num = shift;
-    if ( $num >= ( 1000**3 ) ) {       # Billions
-        return int( ( $num / ( 1000**3 ) ) ) . "B";
-    }
-    elsif ( $num >= ( 1000**2 ) ) {    # Millions
-        return int( ( $num / ( 1000**2 ) ) ) . "M";
-    }
-    elsif ( $num >= 1000 ) {           # Thousands
-        return int( ( $num / 1000 ) ) . "K";
-    }
-    else {
-        return $num;
-    }
+    my ($num) = @_;
+    return int( $num / 1000**3 ) . "B" if $num >= 1000**3;        # Billions
+    return int( $num / 1000**2 ) . "M" if $num >= 1000**2;        # Millions
+    return int( $num / 1000 ) . "K"    if $num >= 1000;           # Thousands
+    return $num;
 }
 
 # Calculate Percentage
@@ -337,19 +313,11 @@ sub pretty_uptime {
     my $minutes = int( ( $uptime % 3600 ) / 60 );
     my $hours   = int( ( $uptime % 86400 ) / (3600) );
     my $days    = int( $uptime / (86400) );
-    my $uptimestring;
-    if ( $days > 0 ) {
-        $uptimestring = "${days}d ${hours}h ${minutes}m ${seconds}s";
-    }
-    elsif ( $hours > 0 ) {
-        $uptimestring = "${hours}h ${minutes}m ${seconds}s";
-    }
-    elsif ( $minutes > 0 ) {
-        $uptimestring = "${minutes}m ${seconds}s";
-    }
-    else {
-        $uptimestring = "${seconds}s";
-    }
+    my $uptimestring =
+        $days > 0    ? "${days}d ${hours}h ${minutes}m ${seconds}s"
+      : $hours > 0   ? "${hours}h ${minutes}m ${seconds}s"
+      : $minutes > 0 ? "${minutes}m ${seconds}s"
+      :                "${seconds}s";
     return $uptimestring;
 }
 
@@ -368,14 +336,17 @@ sub os_setup {
     if ( $opt{'forcemem'} > 0 ) {
         $physical_memory = $opt{'forcemem'} * 1048576;
         infoprint "Assuming $opt{'forcemem'} MB of physical memory";
-        if ( $opt{'forceswap'} > 0 ) {
-            $swap_memory = $opt{'forceswap'} * 1048576;
-            infoprint "Assuming $opt{'forceswap'} MB of swap space";
-        }
-        else {
-            $swap_memory = 0;
-            badprint "Assuming 0 MB of swap space (use --forceswap to specify)";
-        }
+        $swap_memory = do {
+            if ( $opt{'forceswap'} > 0 ) {
+                infoprint "Assuming $opt{'forceswap'} MB of swap space";
+                $opt{'forceswap'} * 1048576;
+            }
+            else {
+                badprint
+                  "Assuming 0 MB of swap space (use --forceswap to specify)";
+                0;
+            }
+        };
     }
     else {
         if ( $os =~ /Linux|CYGWIN/ ) {
@@ -491,9 +462,6 @@ sub validate_tuner_version {
         compare_tuner_version($update);
         return;
     }
-    else {
-
-    }
 
     if ( $httpcli =~ /wget$/ ) {
         debugprint "$httpcli is available.";
@@ -545,8 +513,10 @@ sub update_tuner_version {
                 ++$receivedScripts;
                 debugprint "$script updated: $update";
             }
+            next;
         }
-        elsif ( $httpcli =~ /wget$/ ) {
+
+        if ( $httpcli =~ /wget$/ ) {
             debugprint "$httpcli is available.";
 
             debugprint
@@ -562,11 +532,11 @@ sub update_tuner_version {
                 ++$receivedScripts;
                 debugprint "$script updated: $update";
             }
+            next;
         }
-        else {
-            debugprint "curl and wget are not available.";
-            infoprint "Unable to check for the latest MySQLTuner version";
-        }
+
+        debugprint "curl and wget are not available.";
+        infoprint "Unable to check for the latest MySQLTuner version";
     }
 
     if ( $receivedScripts eq $totalScripts ) {
@@ -609,38 +579,28 @@ if ( $osname eq 'MSWin32' ) {
 sub mysql_setup {
     $doremote     = 0;
     $remotestring = '';
-    if ( $opt{mysqladmin} ) {
-        $mysqladmincmd = $opt{mysqladmin};
-    }
-    else {
-        $mysqladmincmd = which( "mysqladmin", $ENV{'PATH'} );
-    }
+
+    $mysqladmincmd =
+      $opt{mysqladmin} ? $opt{mysqladmin} : which( "mysqladmin", $ENV{'PATH'} );
     chomp($mysqladmincmd);
-    if ( !-e $mysqladmincmd && $opt{mysqladmin} ) {
-        badprint "Unable to find the mysqladmin command you specified: "
-          . $mysqladmincmd . "";
+    if ( !-e $mysqladmincmd ) {
+        badprint $opt{mysqladmin}
+          ? "Unable to find the mysqladmin command you specified: "
+          . $mysqladmincmd
+          : "Couldn't find mysqladmin in your \$PATH. Is MySQL installed?";
         exit 1;
     }
-    elsif ( !-e $mysqladmincmd ) {
-        badprint "Couldn't find mysqladmin in your \$PATH. Is MySQL installed?";
-        exit 1;
-    }
-    if ( $opt{mysqlcmd} ) {
-        $mysqlcmd = $opt{mysqlcmd};
-    }
-    else {
-        $mysqlcmd = which( "mysql", $ENV{'PATH'} );
-    }
+
+    $mysqlcmd =
+      $opt{mysqlcmd} ? $opt{mysqlcmd} : which( "mysql", $ENV{'PATH'} );
     chomp($mysqlcmd);
-    if ( !-e $mysqlcmd && $opt{mysqlcmd} ) {
-        badprint "Unable to find the mysql command you specified: "
-          . $mysqlcmd . "";
+    if ( !-e $mysqlcmd ) {
+        badprint $opt{mysqlcmd}
+          ? "Unable to find the mysql command you specified: $mysqlcmd"
+          : "Couldn't find mysql in your \$PATH. Is MySQL installed?";
         exit 1;
     }
-    elsif ( !-e $mysqlcmd ) {
-        badprint "Couldn't find mysql in your \$PATH. Is MySQL installed?";
-        exit 1;
-    }
+
     $mysqlcmd =~ s/\n$//g;
     my $mysqlclidefaults = `$mysqlcmd --print-defaults`;
     debugprint "MySQL Client: $mysqlclidefaults";
@@ -653,9 +613,7 @@ sub mysql_setup {
     debugprint "MySQL Client: $mysqlcmd";
 
     # Are we being asked to connect via a socket?
-    if ( $opt{socket} ne 0 ) {
-        $remotestring = " -S $opt{socket}";
-    }
+    $remotestring = " -S $opt{socket}" if $opt{socket} ne 0;
 
     # Are we being asked to connect to a remote server?
     if ( $opt{host} ne 0 ) {
@@ -673,9 +631,8 @@ sub mysql_setup {
 
         infoprint "Performing tests on $opt{host}:$opt{port}";
         $remotestring = " -h $opt{host} -P $opt{port}";
-        if ( ( $opt{host} ne "127.0.0.1" ) && ( $opt{host} ne "localhost" ) ) {
-            $doremote = 1;
-        }
+        $doremote     = 1
+          if $opt{host} ne "127.0.0.1" and $opt{host} ne "localhost";
     }
 
     # Did we already get a username without password on the command line?
@@ -684,13 +641,10 @@ sub mysql_setup {
         my $loginstatus = `$mysqladmincmd ping $mysqllogin 2>&1`;
         if ( $loginstatus =~ /mysqld is alive/ ) {
             goodprint "Logged in using credentials passed on the command line";
-            return 1;
+            return;
         }
-        else {
-            badprint
-              "Attempted to use login credentials, but they were invalid";
-            exit 1;
-        }
+        badprint "Attempted to use login credentials, but they were invalid";
+        exit 1;
     }
 
     # Did we already get a username and password passed on the command line?
@@ -699,60 +653,52 @@ sub mysql_setup {
         my $loginstatus = `$mysqladmincmd ping $mysqllogin 2>&1`;
         if ( $loginstatus =~ /mysqld is alive/ ) {
             goodprint "Logged in using credentials passed on the command line";
-            return 1;
+            return;
         }
-        else {
-            badprint
-              "Attempted to use login credentials, but they were invalid";
-            exit 1;
-        }
+        badprint "Attempted to use login credentials, but they were invalid";
+        exit 1;
     }
 
     my $svcprop = which( "svcprop", $ENV{'PATH'} );
-    if ( substr( $svcprop, 0, 1 ) =~ "/" ) {
-
-        # We are on solaris
+    if ( substr( $svcprop, 0, 1 ) =~ "/" ) {    # We are on solaris
         ( my $mysql_login =
 `svcprop -p quickbackup/username svc:/network/mysql-quickbackup:default`
         ) =~ s/\s+$//;
         ( my $mysql_pass =
 `svcprop -p quickbackup/password svc:/network/mysql-quickbackup:default`
         ) =~ s/\s+$//;
-        if ( substr( $mysql_login, 0, 7 ) ne "svcprop" ) {
+        return if substr( $mysql_login, 0, 7 ) eq "svcprop";
 
-            # mysql-quickbackup is installed
-            $mysqllogin = "-u $mysql_login -p$mysql_pass";
-            my $loginstatus = `mysqladmin $mysqllogin ping 2>&1`;
-            if ( $loginstatus =~ /mysqld is alive/ ) {
-                goodprint "Logged in using credentials from mysql-quickbackup.";
-                return 1;
-            }
-            else {
-                badprint
-"Attempted to use login credentials from mysql-quickbackup, but they failed.";
-                exit 1;
-            }
+        # mysql-quickbackup is installed
+        $mysqllogin = "-u $mysql_login -p$mysql_pass";
+        my $loginstatus = `mysqladmin $mysqllogin ping 2>&1`;
+        if ( $loginstatus =~ /mysqld is alive/ ) {
+            goodprint "Logged in using credentials from mysql-quickbackup.";
+            return;
         }
+        badprint
+"Attempted to use login credentials from mysql-quickbackup, but they failed.";
+        exit 1;
     }
-    elsif ( -r "/etc/psa/.psa.shadow" and $doremote == 0 ) {
+
+    if ( -r "/etc/psa/.psa.shadow" and $doremote == 0 ) {
 
         # It's a Plesk box, use the available credentials
         $mysqllogin = "-u admin -p`cat /etc/psa/.psa.shadow`";
         my $loginstatus = `$mysqladmincmd ping $mysqllogin 2>&1`;
-        unless ( $loginstatus =~ /mysqld is alive/ ) {
+        return if $loginstatus =~ /mysqld is alive/;
 
-            # Plesk 10+
-            $mysqllogin =
-              "-u admin -p`/usr/local/psa/bin/admin --show-password`";
-            $loginstatus = `$mysqladmincmd ping $mysqllogin 2>&1`;
-            unless ( $loginstatus =~ /mysqld is alive/ ) {
-                badprint
+        # Plesk 10+
+        $mysqllogin  = "-u admin -p`/usr/local/psa/bin/admin --show-password`";
+        $loginstatus = `$mysqladmincmd ping $mysqllogin 2>&1`;
+        return if $loginstatus =~ /mysqld is alive/;
+
+        badprint
 "Attempted to use login credentials from Plesk and Plesk 10+, but they failed.";
-                exit 1;
-            }
-        }
+        exit 1;
     }
-    elsif ( -r "/usr/local/directadmin/conf/mysql.conf" and $doremote == 0 ) {
+
+    if ( -r "/usr/local/directadmin/conf/mysql.conf" and $doremote == 0 ) {
 
         # It's a DirectAdmin box, use the available credentials
         my $mysqluser =
@@ -768,13 +714,14 @@ sub mysql_setup {
         $mysqllogin = "-u $mysqluser -p$mysqlpass";
 
         my $loginstatus = `mysqladmin ping $mysqllogin 2>&1`;
-        unless ( $loginstatus =~ /mysqld is alive/ ) {
-            badprint
+        return if $loginstatus =~ /mysqld is alive/;
+
+        badprint
 "Attempted to use login credentials from DirectAdmin, but they failed.";
-            exit 1;
-        }
+        exit 1;
     }
-    elsif ( -r "/etc/mysql/debian.cnf" and $doremote == 0 ) {
+
+    if ( -r "/etc/mysql/debian.cnf" and $doremote == 0 ) {
 
         # We have a debian maintenance account, use it
         $mysqllogin = "--defaults-file=/etc/mysql/debian.cnf";
@@ -782,92 +729,70 @@ sub mysql_setup {
         if ( $loginstatus =~ /mysqld is alive/ ) {
             goodprint
               "Logged in using credentials from debian maintenance account.";
-            return 1;
+            return;
         }
-        else {
-            badprint
+
+        badprint
 "Attempted to use login credentials from debian maintenance account, but they failed.";
-            exit 1;
-        }
+        exit 1;
     }
-    else {
-        # It's not Plesk or debian, we should try a login
-        debugprint "$mysqladmincmd $remotestring ping 2>&1";
-        my $loginstatus = `$mysqladmincmd $remotestring ping 2>&1`;
-        if ( $loginstatus =~ /mysqld is alive/ ) {
-            # Login went just fine
-            $mysqllogin = " $remotestring ";
-            # Did this go well because of a .my.cnf file or is there no password set?
-            my $userpath = `printenv HOME`;
-            if ( length($userpath) > 0 ) {
-                chomp($userpath);
-            }
-            unless ( -e "${userpath}/.my.cnf" or -e "${userpath}/.mylogin.cnf" )
-            {
-                badprint
-"Successfully authenticated with no password - SECURITY RISK!";
-            }
-            return 1;
-        }
-        else {
-            if ( $opt{'noask'} == 1 ) {
-                badprint
-                  "Attempted to use login credentials, but they were invalid";
-                exit 1;
-            }
-            my ( $name, $password );
 
-            # If --user is defined no need to ask for username
-            if ( $opt{user} ne 0 ) {
-                $name = $opt{user};
-            }
-            else {
-                print STDERR "Please enter your MySQL administrative login: ";
-                $name = <STDIN>;
-            }
-
-            # If --pass is defined no need to ask for password
-            if ( $opt{pass} ne 0 ) {
-                $password = $opt{pass};
-            }
-            else {
-                print STDERR
-                  "Please enter your MySQL administrative password: ";
-                system("stty -echo >$devnull 2>&1");
-                $password = <STDIN>;
-                system("stty echo >$devnull 2>&1");
-            }
-            chomp($password);
-            chomp($name);
-            $mysqllogin = "-u $name";
-
-            if ( length($password) > 0 ) {
-                $mysqllogin .= " -p\"$password\"";
-            }
-            $mysqllogin .= $remotestring;
-            my $loginstatus = `$mysqladmincmd ping $mysqllogin 2>&1`;
-            if ( $loginstatus =~ /mysqld is alive/ ) {
-                print STDERR "";
-                if ( !length($password) ) {
-
-                    # Did this go well because of a .my.cnf file or is there no password set?
-                    my $userpath = `printenv HOME`;
-                    chomp($userpath);
-                    unless ( -e "$userpath/.my.cnf" ) {
-                        badprint
-"Successfully authenticated with no password - SECURITY RISK!";
-                    }
-                }
-                return 1;
-            }
-            else {
-                badprint
-                  "Attempted to use login credentials, but they were invalid.";
-                exit 1;
-            }
-            exit 1;
-        }
+    # It's not Plesk or debian, we should try a login
+    debugprint "$mysqladmincmd $remotestring ping 2>&1";
+    my $loginstatus = `$mysqladmincmd $remotestring ping 2>&1`;
+    if ( $loginstatus =~ /mysqld is alive/ ) {
+        # Login went just fine
+        $mysqllogin = " $remotestring ";
+        # Did this go well because of a .my.cnf file or is there no password set?
+        my $userpath = `printenv HOME`;
+        chomp $userpath if length $userpath;
+        badprint "Successfully authenticated with no password - SECURITY RISK!"
+          unless -e "${userpath}/.my.cnf" or -e "${userpath}/.mylogin.cnf";
+        return;
     }
+
+    if ( $opt{'noask'} == 1 ) {
+        badprint "Attempted to use login credentials, but they were invalid";
+        exit 1;
+    }
+
+    # If --user is defined no need to ask for username
+    my $name = $opt{user} ne 0 ? $opt{user} : do {
+        print STDERR "Please enter your MySQL administrative login: ";
+        <STDIN>;
+    };
+
+    # If --pass is defined no need to ask for password
+    my $password = $opt{pass} ne 0 ? $opt{pass} : do {
+        print STDERR "Please enter your MySQL administrative password: ";
+        system("stty -echo >$devnull 2>&1");
+        my $pass = <STDIN>;
+        system("stty echo >$devnull 2>&1");
+        $pass;
+    };
+
+    chomp $password;
+    chomp $name;
+    $mysqllogin = "-u $name";
+    $mysqllogin .= " -p\"$password\"" if length $password;
+    $mysqllogin .= $remotestring;
+
+    my $loginstatus = `$mysqladmincmd ping $mysqllogin 2>&1`;
+    if ( $loginstatus =~ /mysqld is alive/ ) {
+        print STDERR "";
+        return if length $password;
+
+        # Did this go well because of a .my.cnf file or is there no password set?
+        my $userpath = `printenv HOME`;
+        chomp $userpath;
+        badprint "Successfully authenticated with no password - SECURITY RISK!"
+          unless -e "$userpath/.my.cnf";
+
+        return;
+    }
+
+    badprint "Attempted to use login credentials, but they were invalid.";
+    exit 1;
 }
 
 # MySQL Request Array
@@ -1274,12 +1199,9 @@ sub get_kernel_info() {
 
 sub get_system_info() {
     infoprint get_os_release;
-    if (is_virtual_machine) {
-        infoprint "Machine type          : Virtual machine";
-    }
-    else {
-        infoprint "Machine type          : Physical machine";
-    }
+    infoprint is_virtual_machine
+      ? "Machine type          : Virtual machine"
+      : "Machine type          : Physical machine";
 
     `ping -c 1 ipecho.net &>/dev/null`;
     my $isConnected = $?;
@@ -1365,17 +1287,14 @@ sub system_recommendations {
         if ( scalar(@opened_ports) > $opt{'maxportallowed'} ) {
             badprint "There is too many listening ports: "
               . scalar(@opened_ports)
-              . " opened > "
-              . $opt{'maxportallowed'}
-              . "allowed.";
+              . " opened > $opt{'maxportallowed'} allowed.";
             push @generalrec,
               "Consider dedicating a server for your database installation "
               . "with less services running on !";
         }
         else {
             goodprint "There is less than "
-              . $opt{'maxportallowed'}
-              . " opened ports on this server.";
+              . "$opt{'maxportallowed'} opened ports on this server.";
         }
     }
 
@@ -1402,10 +1321,8 @@ sub security_recommendations {
         return;
     }
 
-    my $PASS_COLUMN_NAME = 'password';
-    if ( $myvar{'version'} =~ /5.7/ ) {
-        $PASS_COLUMN_NAME = 'authentication_string';
-    }
+    my $PASS_COLUMN_NAME =
+      $myvar{'version'} =~ /5.7/ ? 'authentication_string' : 'password';
     debugprint "Password column = $PASS_COLUMN_NAME";
 
     # Looking for Anonymous users
@@ -1417,7 +1334,7 @@ sub security_recommendations {
     if (@mysqlstatlist) {
         foreach my $line ( sort @mysqlstatlist ) {
             chomp($line);
-            badprint "User '" . $line . "' is an anonymous account.";
+            badprint "User '$line' is an anonymous account.";
         }
         push @generalrec,
           "Remove Anonymous User accounts - there are "
@@ -1427,6 +1344,7 @@ sub security_recommendations {
     else {
         goodprint "There are no anonymous accounts for any database users";
     }
+
     if ( mysql_version_le( 5, 1 ) ) {
         badprint "No more password checks for MySQL version <=5.1";
         badprint "MySQL version <=5.1 are deprecated and end of support.";
@@ -1530,21 +1448,16 @@ sub security_recommendations {
 sub get_replication_status {
     subheaderprint "Replication Metrics";
     infoprint "Galera Synchronous replication: " . $myvar{'have_galera'};
-    if ( scalar( keys %myslaves ) == 0 ) {
-        infoprint "No replication slave(s) for this server.";
-    }
-    else {
-        infoprint "This server is acting as master for "
-          . scalar( keys %myslaves )
-          . " server(s).";
-    }
+    infoprint scalar( keys %myslaves ) == 0
+      ? "No replication slave(s) for this server."
+      : "This server is acting as master for "
+      . scalar( keys %myslaves )
+      . " server(s).";
 
-    if ( scalar( keys %myrepl ) == 0 and scalar( keys %myslaves ) == 0 ) {
-        infoprint "This is a standalone server.";
-        return;
-    }
     if ( scalar( keys %myrepl ) == 0 ) {
-        infoprint "No replication setup for this server.";
+        infoprint scalar( keys %myslaves ) == 0
+          ? "This is a standalone server."
+          : "No replication setup for this server.";
         return;
     }
 
@@ -1561,21 +1474,23 @@ sub get_replication_status {
         badprint
           "This replication slave is not running but seems to be configured.";
     }
+
     if (   defined($io_running)
         && $io_running =~ /yes/i
         && $sql_running =~ /yes/i )
     {
         if ( $myvar{'read_only'} eq 'OFF' ) {
-            badprint
-"This replication slave is running with the read_only option disabled.";
+            badprint "This replication slave "
+              . "is running with the read_only option disabled.";
         }
         else {
-            goodprint
-"This replication slave is running with the read_only option enabled.";
+            goodprint "This replication slave "
+              . "is running with the read_only option enabled.";
         }
+
         if ( $seconds_behind_master > 0 ) {
-            badprint
-"This replication slave is lagging and slave has $seconds_behind_master second(s) behind master host.";
+            badprint "This replication slave "
+              . "is lagging and slave has $seconds_behind_master second(s) behind master host.";
         }
         else {
             goodprint "This replication slave is up to date with master.";
@@ -1593,19 +1508,20 @@ sub validate_mysql_version {
     $mysqlvermicro ||= 0;
     if ( !mysql_version_ge( 5, 1 ) ) {
         badprint "Your MySQL version "
-          . $myvar{'version'}
-          . " is EOL software!  Upgrade soon!";
+          . "$myvar{'version'} is EOL software!  Upgrade soon!";
+        return;
     }
-    elsif ( ( mysql_version_ge(6) and mysql_version_le(9) )
+
+    if ( ( mysql_version_ge(6) and mysql_version_le(9) )
         or mysql_version_ge(12) )
     {
         badprint "Currently running unsupported MySQL version "
-          . $myvar{'version'} . "";
+          . $myvar{'version'};
+        return;
     }
-    else {
-        goodprint "Currently running supported MySQL version "
-          . $myvar{'version'} . "";
-    }
+
+    goodprint "Currently running supported MySQL version $myvar{'version'}";
+    return;
 }
 
 # Checks if MySQL version is greater than equal to (major, minor, micro)
@@ -1640,51 +1556,36 @@ sub mysql_micro_version_le {
 my ($arch);
 
 sub check_architecture {
-    if ( $doremote eq 1 ) { return; }
-    if ( `uname` =~ /SunOS/ && `isainfo -b` =~ /64/ ) {
-        $arch = 64;
-        goodprint "Operating on 64-bit architecture";
-    }
-    elsif ( `uname` !~ /SunOS/ && `uname -m` =~ /64/ ) {
-        $arch = 64;
-        goodprint "Operating on 64-bit architecture";
-    }
-    elsif ( `uname` =~ /AIX/ && `bootinfo -K` =~ /64/ ) {
-        $arch = 64;
-        goodprint "Operating on 64-bit architecture";
-    }
-    elsif ( `uname` =~ /NetBSD|OpenBSD/ && `sysctl -b hw.machine` =~ /64/ ) {
-        $arch = 64;
-        goodprint "Operating on 64-bit architecture";
-    }
-    elsif ( `uname` =~ /FreeBSD/ && `sysctl -b hw.machine_arch` =~ /64/ ) {
-        $arch = 64;
-        goodprint "Operating on 64-bit architecture";
-    }
-    elsif ( `uname` =~ /Darwin/ && `uname -m` =~ /Power Macintosh/ ) {
-
-        # Darwin box.local 9.8.0 Darwin Kernel Version 9.8.0: Wed Jul 15 16:57:01 PDT 2009; root:xnu1228.15.4~1/RELEASE_PPC Power Macintosh
-        $arch = 64;
-        goodprint "Operating on 64-bit architecture";
-    }
-    elsif ( `uname` =~ /Darwin/ && `uname -m` =~ /x86_64/ ) {
-
-        # Darwin gibas.local 12.3.0 Darwin Kernel Version 12.3.0: Sun Jan  6 22:37:10 PST 2013; root:xnu-2050.22.13~1/RELEASE_X86_64 x86_64
-        $arch = 64;
-        goodprint "Operating on 64-bit architecture";
-    }
-    else {
-        $arch = 32;
-        if ( $physical_memory > 2147483648 ) {
-            badprint
-"Switch to 64-bit OS - MySQL cannot currently use all of your RAM";
-        }
-        else {
-            goodprint "Operating on 32-bit architecture with less than 2GB RAM";
-        }
-    }
+    return if $doremote eq 1;
+    $arch = _check_architecture() || 64;
+    goodprint "Operating on 64-bit architecture" if $arch == 64;
     $result{'OS'}{'Architecture'} = "$arch bits";
 
+}
+
+sub _check_architecture {
+
+    return if    #
+         ( `uname` =~ /SunOS/          and `isainfo -b` =~ /64/ )
+      or ( `uname` !~ /SunOS/          and `uname -m` =~ /64/ )
+      or ( `uname` =~ /AIX/            and `bootinfo -K` =~ /64/ )
+      or ( `uname` =~ /NetBSD|OpenBSD/ and `sysctl -b hw.machine` =~ /64/ )
+      or ( `uname` =~ /FreeBSD/        and `sysctl -b hw.machine_arch` =~ /64/ )
+      # Darwin box.local 9.8.0 Darwin Kernel Version 9.8.0: Wed Jul 15 16:57:01 PDT 2009; root:xnu1228.15.4~1/RELEASE_PPC Power Macintosh
+      or ( `uname` =~ /Darwin/ and `uname -m` =~ /Power Macintosh/ )
+      # Darwin gibas.local 12.3.0 Darwin Kernel Version 12.3.0: Sun Jan  6 22:37:10 PST 2013; root:xnu-2050.22.13~1/RELEASE_X86_64 x86_64
+      # TODO verify this one, since the second entry seems to make this unreachable
+      or ( `uname` =~ /Darwin/ and `uname -m` =~ /x86_64/ );
+
+    $arch = 32;
+    if ( $physical_memory > 2147483648 ) {
+        badprint
+          "Switch to 64-bit OS - MySQL cannot currently use all of your RAM";
+    }
+    else {
+        goodprint "Operating on 32-bit architecture with less than 2GB RAM";
+    }
+    return 32;
 }
 
 # Start up a ton of storage engine counts/statistics
@@ -1837,6 +1738,7 @@ sub check_storage_engines {
             }
         }
     }
+
     while ( my ( $engine, $size ) = each(%enginestats) ) {
         infoprint "Data in $engine tables: "
           . hr_bytes_rnd($size)
@@ -1946,22 +1848,15 @@ sub calculations {
     }
 
     # Per-thread memory
-    if ( mysql_version_ge(4) ) {
-        $mycalc{'per_thread_buffers'} =
-          $myvar{'read_buffer_size'} +
-          $myvar{'read_rnd_buffer_size'} +
-          $myvar{'sort_buffer_size'} +
-          $myvar{'thread_stack'} +
-          $myvar{'join_buffer_size'};
-    }
-    else {
-        $mycalc{'per_thread_buffers'} =
-          $myvar{'record_buffer'} +
+    $mycalc{'per_thread_buffers'} =
+      ( $myvar{'thread_stack'} + $myvar{'join_buffer_size'} ) + (
+        mysql_version_ge(4)
+        ? $myvar{'read_buffer_size'} + $myvar{'read_rnd_buffer_size'} +
+          $myvar{'sort_buffer_size'}
+        : $myvar{'record_buffer'} +
           $myvar{'record_rnd_buffer'} +
-          $myvar{'sort_buffer'} +
-          $myvar{'thread_stack'} +
-          $myvar{'join_buffer_size'};
-    }
+          $myvar{'sort_buffer'} );
+
     $mycalc{'total_per_thread_buffers'} =
       $mycalc{'per_thread_buffers'} * $myvar{'max_connections'};
     $mycalc{'max_total_per_thread_buffers'} =
@@ -2047,51 +1942,41 @@ sub calculations {
       . $mycalc{'pct_connections_aborted'} . "";
 
     # Key buffers
-    if ( mysql_version_ge( 4, 1 ) && $myvar{'key_buffer_size'} > 0 ) {
-        $mycalc{'pct_key_buffer_used'} = sprintf(
-            "%.1f",
-            (   1 - (
-                    (   $mystat{'Key_blocks_unused'} *
-                          $myvar{'key_cache_block_size'}
-                    ) / $myvar{'key_buffer_size'} ) ) * 100 );
-    }
-    else {
-        $mycalc{'pct_key_buffer_used'} = 0;
-    }
+    $mycalc{'pct_key_buffer_used'} =
+      mysql_version_ge( 4, 1 ) && $myvar{'key_buffer_size'} > 0
+      ? sprintf(
+        "%.1f",
+        (   1 - (
+                (   $mystat{'Key_blocks_unused'} *
+                      $myvar{'key_cache_block_size'}
+                ) / $myvar{'key_buffer_size'} ) ) * 100 )
+      : 0;
 
-    if ( $mystat{'Key_read_requests'} > 0 ) {
-        $mycalc{'pct_keys_from_mem'} = sprintf(
-            "%.1f",
-            (   100 - (
-                    ( $mystat{'Key_reads'} / $mystat{'Key_read_requests'} ) *
-                      100 ) ) );
-    }
-    else {
-        $mycalc{'pct_keys_from_mem'} = 0;
-    }
-    if ( defined $mystat{'Aria_pagecache_read_requests'}
-        && $mystat{'Aria_pagecache_read_requests'} > 0 )
-    {
-        $mycalc{'pct_aria_keys_from_mem'} = sprintf(
-            "%.1f",
-            (   100 - (
-                    (   $mystat{'Aria_pagecache_reads'} /
-                          $mystat{'Aria_pagecache_read_requests'} ) * 100 ) ) );
-    }
-    else {
-        $mycalc{'pct_aria_keys_from_mem'} = 0;
-    }
+    $mycalc{'pct_keys_from_mem'} = $mystat{'Key_read_requests'} > 0
+      ? sprintf(
+        "%.1f",
+        (   100 -
+              ( ( $mystat{'Key_reads'} / $mystat{'Key_read_requests'} ) * 100 )
+        ) )
+      : 0;
 
-    if ( $mystat{'Key_write_requests'} > 0 ) {
-        $mycalc{'pct_wkeys_from_mem'} = sprintf(
-            "%.1f",
-            (   100 - (
-                    ( $mystat{'Key_writes'} / $mystat{'Key_write_requests'} ) *
-                      100 ) ) );
-    }
-    else {
-        $mycalc{'pct_wkeys_from_mem'} = 0;
-    }
+    $mycalc{'pct_aria_keys_from_mem'} =
+      defined $mystat{'Aria_pagecache_read_requests'}
+      && $mystat{'Aria_pagecache_read_requests'} > 0
+      ? sprintf(
+        "%.1f",
+        (   100 - (
+                (   $mystat{'Aria_pagecache_reads'} /
+                      $mystat{'Aria_pagecache_read_requests'} ) * 100 ) ) )
+      : 0;
+
+    $mycalc{'pct_wkeys_from_mem'} = $mystat{'Key_write_requests'} > 0
+      ? sprintf(
+        "%.1f",
+        (   100 - (
+                ( $mystat{'Key_writes'} / $mystat{'Key_write_requests'} ) * 100
+            ) ) )
+      : 0;
 
     if ( $doremote eq 0 and !mysql_version_ge(5) ) {
         my $size = 0;
@@ -2107,44 +1992,27 @@ sub calculations {
         $mycalc{'total_aria_indexes'} = select_one
 "SELECT IFNULL(SUM(INDEX_LENGTH),0) FROM information_schema.TABLES WHERE TABLE_SCHEMA NOT IN ('information_schema') AND ENGINE = 'Aria';";
     }
-    if ( defined $mycalc{'total_myisam_indexes'}
-        and $mycalc{'total_myisam_indexes'} == 0 )
-    {
-        $mycalc{'total_myisam_indexes'} = "fail";
-    }
-    elsif ( defined $mycalc{'total_myisam_indexes'} ) {
-        chomp( $mycalc{'total_myisam_indexes'} );
-    }
-    if ( defined $mycalc{'total_aria_indexes'}
-        and $mycalc{'total_aria_indexes'} == 0 )
-    {
-        $mycalc{'total_aria_indexes'} = 1;
-    }
-    elsif ( defined $mycalc{'total_aria_indexes'} ) {
-        chomp( $mycalc{'total_aria_indexes'} );
-    }
+
+    $mycalc{'total_myisam_indexes'} if defined $mycalc{'total_myisam_indexes'};
+    $mycalc{'total_myisam_indexes'} ||= "fail";
+
+    $mycalc{'total_aria_indexes'} if defined $mycalc{'total_aria_indexes'};
+    $mycalc{'total_aria_indexes'} ||= 1;
 
     # Query cache
     if ( mysql_version_ge(4) ) {
-        $mycalc{'query_cache_efficiency'} = sprintf(
-            "%.1f",
-            (   $mystat{'Qcache_hits'} /
-                  ( $mystat{'Com_select'} + $mystat{'Qcache_hits'} ) ) * 100 );
-        if ( $myvar{'query_cache_size'} ) {
-            $mycalc{'pct_query_cache_used'} = sprintf(
-                "%.1f",
-                100 - (
-                    $mystat{'Qcache_free_memory'} / $myvar{'query_cache_size'}
-                  ) * 100 );
-        }
-        if ( $mystat{'Qcache_lowmem_prunes'} == 0 ) {
-            $mycalc{'query_cache_prunes_per_day'} = 0;
-        }
-        else {
-            $mycalc{'query_cache_prunes_per_day'} =
-              int( $mystat{'Qcache_lowmem_prunes'} /
-                  ( $mystat{'Uptime'} / 86400 ) );
-        }
+        $mycalc{'query_cache_efficiency'} = sprintf "%.1f",
+          ( $mystat{'Qcache_hits'} /
+              ( $mystat{'Com_select'} + $mystat{'Qcache_hits'} ) ) * 100;
+        $mycalc{'pct_query_cache_used'} = sprintf "%.1f",
+          100 -
+          ( $mystat{'Qcache_free_memory'} / $myvar{'query_cache_size'} ) * 100
+          if $myvar{'query_cache_size'};
+        $mycalc{'query_cache_prunes_per_day'} =
+          $mystat{'Qcache_lowmem_prunes'} == 0
+          ? 0
+          : int(
+            $mystat{'Qcache_lowmem_prunes'} / ( $mystat{'Uptime'} / 86400 ) );
     }
 
     # Sorting
@@ -2162,24 +2030,19 @@ sub calculations {
 
     # Temporary tables
     if ( $mystat{'Created_tmp_tables'} > 0 ) {
-        if ( $mystat{'Created_tmp_disk_tables'} > 0 ) {
-            $mycalc{'pct_temp_disk'} = int(
-                (   $mystat{'Created_tmp_disk_tables'} /
-                      $mystat{'Created_tmp_tables'} ) * 100 );
-        }
-        else {
-            $mycalc{'pct_temp_disk'} = 0;
-        }
+        $mycalc{'pct_temp_disk'} =
+          $mystat{'Created_tmp_disk_tables'} > 0
+          ? int(
+            (   $mystat{'Created_tmp_disk_tables'} /
+                  $mystat{'Created_tmp_tables'} ) * 100 )
+          : 0;
     }
 
     # Table cache
-    if ( $mystat{'Opened_tables'} > 0 ) {
-        $mycalc{'table_cache_hit_rate'} =
-          int( $mystat{'Open_tables'} * 100 / $mystat{'Opened_tables'} );
-    }
-    else {
-        $mycalc{'table_cache_hit_rate'} = 100;
-    }
+    $mycalc{'table_cache_hit_rate'} =
+      $mystat{'Opened_tables'} > 0
+      ? int( $mystat{'Open_tables'} * 100 / $mystat{'Opened_tables'} )
+      : 100;
 
     # Open files
     if ( $myvar{'open_files_limit'} > 0 ) {
@@ -2189,15 +2052,13 @@ sub calculations {
 
     # Table locks
     if ( $mystat{'Table_locks_immediate'} > 0 ) {
-        if ( $mystat{'Table_locks_waited'} == 0 ) {
-            $mycalc{'pct_table_locks_immediate'} = 100;
-        }
-        else {
-            $mycalc{'pct_table_locks_immediate'} = int(
-                $mystat{'Table_locks_immediate'} * 100 / (
-                    $mystat{'Table_locks_waited'} +
-                      $mystat{'Table_locks_immediate'} ) );
-        }
+        $mycalc{'pct_table_locks_immediate'} =
+          $mystat{'Table_locks_waited'} == 0
+          ? 100
+          : int(
+            $mystat{'Table_locks_immediate'} * 100 / (
+                $mystat{'Table_locks_waited'} + $mystat{'Table_locks_immediate'}
+            ) );
     }
 
     # Thread cache
@@ -2209,6 +2070,7 @@ sub calculations {
         $mycalc{'pct_aborted_connections'} =
           int( ( $mystat{'Aborted_connects'} / $mystat{'Connections'} ) * 100 );
     }
+
     if ( $mystat{'Questions'} > 0 ) {
         $mycalc{'total_reads'} = $mystat{'Com_select'};
         $mycalc{'total_writes'} =
@@ -2216,17 +2078,14 @@ sub calculations {
           $mystat{'Com_insert'} +
           $mystat{'Com_update'} +
           $mystat{'Com_replace'};
-        if ( $mycalc{'total_reads'} == 0 ) {
-            $mycalc{'pct_reads'}  = 0;
-            $mycalc{'pct_writes'} = 100;
-        }
-        else {
-            $mycalc{'pct_reads'} = int(
+        ( $mycalc{'pct_reads'}, $mycalc{'pct_writes'} ) =
+          $mycalc{'total_reads'} == 0 ? ( 0, 100 ) : do {
+            my $reads = int(
                 (   $mycalc{'total_reads'} /
                       ( $mycalc{'total_reads'} + $mycalc{'total_writes'} )
                 ) * 100 );
-            $mycalc{'pct_writes'} = 100 - $mycalc{'pct_reads'};
-        }
+            ( $reads, 100 - $reads );
+          };
     }
 
     # InnoDB
@@ -2305,17 +2164,12 @@ sub mysql_stats {
       . $mycalc{'pct_writes'} . "%";
 
     # Binlog Cache
-    if ( $myvar{'log_bin'} eq 'OFF' ) {
-        infoprint "Binary logging is disabled";
-    }
-    else {
-        infoprint "Binary logging is enabled (GTID MODE: "
-          . ( defined( $myvar{'gtid_mode'} ) ? $myvar{'gtid_mode'} : "OFF" )
-          . ")";
-    }
+    infoprint $myvar{'log_bin'} eq 'OFF'
+      ? "Binary logging is disabled"
+      : "Binary logging is enabled (GTID MODE: "
+      . ( defined $myvar{'gtid_mode'} ? $myvar{'gtid_mode'} : "OFF" ) . ")";
 
     # Memory usage
-
     infoprint "Physical Memory     : " . hr_bytes($physical_memory);
     infoprint "Max MySQL memory    : " . hr_bytes( $mycalc{'max_peak_memory'} );
     infoprint "Other process memory: " . hr_bytes( get_other_process_memory() );
@@ -2415,24 +2269,26 @@ sub mysql_stats {
     }
 
     # Slow queries
+    my $slow_msg =
+        "Slow queries: $mycalc{'pct_slow_queries'}% ("
+      . hr_num( $mystat{'Slow_queries'} ) . "/"
+      . hr_num( $mystat{'Questions'} ) . ")";
     if ( $mycalc{'pct_slow_queries'} > 5 ) {
-        badprint "Slow queries: $mycalc{'pct_slow_queries'}% ("
-          . hr_num( $mystat{'Slow_queries'} ) . "/"
-          . hr_num( $mystat{'Questions'} ) . ")";
+        badprint $slow_msg;
     }
     else {
-        goodprint "Slow queries: $mycalc{'pct_slow_queries'}% ("
-          . hr_num( $mystat{'Slow_queries'} ) . "/"
-          . hr_num( $mystat{'Questions'} ) . ")";
+        goodprint $slow_msg;
     }
+
     if ( $myvar{'long_query_time'} > 10 ) {
         push @adjvars, "long_query_time (<= 10)";
     }
-    if ( defined( $myvar{'log_slow_queries'} ) ) {
-        if ( $myvar{'log_slow_queries'} eq "OFF" ) {
-            push @generalrec,
-              "Enable the slow query log to troubleshoot bad queries";
-        }
+
+    if ( defined $myvar{'log_slow_queries'}
+        and $myvar{'log_slow_queries'} eq "OFF" )
+    {
+        push @generalrec,
+          "Enable the slow query log to troubleshoot bad queries";
     }
 
     # Connections
@@ -2586,9 +2442,8 @@ sub mysql_stats {
           "Adjust your join queries to always utilize indexes";
     }
     else {
-        goodprint "No joins without indexes";
-
         # No joins have run without indexes
+        goodprint "No joins without indexes";
     }
 
     # Temporary tables
@@ -2672,12 +2527,8 @@ sub mysql_stats {
               . " open / "
               . hr_num( $mystat{'Opened_tables'} )
               . " opened)";
-            if ( mysql_version_ge( 5, 1 ) ) {
-                $table_cache_var = "table_open_cache";
-            }
-            else {
-                $table_cache_var = "table_cache";
-            }
+            $table_cache_var =
+              mysql_version_ge( 5, 1 ) ? "table_open_cache" : "table_cache";
 
             push @adjvars,
               $table_cache_var . " (> " . $myvar{$table_cache_var} . ")";
@@ -2741,13 +2592,11 @@ sub mysql_stats {
         if (   $mycalc{'pct_binlog_cache'} < 90
             && $mystat{'Binlog_cache_use'} > 0 )
         {
-            badprint "Binlog cache memory access: "
-              . $mycalc{'pct_binlog_cache'} . "% ( "
+            badprint "Binlog cache memory access: $mycalc{'pct_binlog_cache'}"
+              . "% ( "
               . (
                 $mystat{'Binlog_cache_use'} - $mystat{'Binlog_cache_disk_use'} )
-              . " Memory / "
-              . $mystat{'Binlog_cache_use'}
-              . " Total)";
+              . " Memory / $mystat{'Binlog_cache_use'} Total)";
             push @generalrec,
               "Increase binlog_cache_size (Actual value: "
               . "$myvar{'binlog_cache_size'}) ";
@@ -2757,13 +2606,11 @@ sub mysql_stats {
               . " ) ";
         }
         else {
-            goodprint "Binlog cache memory access: "
-              . $mycalc{'pct_binlog_cache'} . "% ( "
+            goodprint "Binlog cache memory access: $mycalc{'pct_binlog_cache'}"
+              . "% ( "
               . (
                 $mystat{'Binlog_cache_use'} - $mystat{'Binlog_cache_disk_use'} )
-              . " Memory / "
-              . $mystat{'Binlog_cache_use'}
-              . " Total)";
+              . " Memory / $mystat{'Binlog_cache_use'} Total)";
             debugprint "Not enough data to validate binlog cache size\n"
               if $mystat{'Binlog_cache_use'} < 10;
         }
@@ -2794,7 +2641,6 @@ sub mysql_myisam {
               . " used / "
               . hr_num( $myvar{'key_buffer_size'} )
               . " cache)";
-
             #push(@adjvars,"key_buffer_size (\~ ".hr_num( $myvar{'key_buffer_size'} * $mycalc{'pct_key_buffer_used'} / 100).")");
         }
         else {
@@ -2808,7 +2654,6 @@ sub mysql_myisam {
         }
     }
     else {
-
         # No queries have run that would use keys
         debugprint "Key buffer used: $mycalc{'pct_key_buffer_used'}% ("
           . hr_num(
@@ -2822,84 +2667,88 @@ sub mysql_myisam {
     if ( !defined( $mycalc{'total_myisam_indexes'} ) and $doremote == 1 ) {
         push @generalrec,
           "Unable to calculate MyISAM indexes on remote MySQL server < 5.0.0";
+        return;
     }
-    elsif ( $mycalc{'total_myisam_indexes'} =~ /^fail$/ ) {
+
+    if ( $mycalc{'total_myisam_indexes'} =~ /^fail$/ ) {
         badprint
           "Cannot calculate MyISAM index size - re-run script as root user";
+        return;
     }
-    elsif ( $mycalc{'total_myisam_indexes'} == "0" ) {
+
+    if ( $mycalc{'total_myisam_indexes'} == "0" ) {
         badprint
           "None of your MyISAM tables are indexed - add indexes immediately";
+        return;
+    }
+
+    if (   $myvar{'key_buffer_size'} < $mycalc{'total_myisam_indexes'}
+        && $mycalc{'pct_keys_from_mem'} < 95 )
+    {
+        badprint "Key buffer size / total MyISAM indexes: "
+          . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
+          . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
+        push @adjvars,
+          "key_buffer_size (> "
+          . hr_bytes( $mycalc{'total_myisam_indexes'} ) . ")";
     }
     else {
-        if (   $myvar{'key_buffer_size'} < $mycalc{'total_myisam_indexes'}
-            && $mycalc{'pct_keys_from_mem'} < 95 )
-        {
-            badprint "Key buffer size / total MyISAM indexes: "
-              . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
-              . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
-            push @adjvars,
-              "key_buffer_size (> "
-              . hr_bytes( $mycalc{'total_myisam_indexes'} ) . ")";
-        }
-        else {
-            goodprint "Key buffer size / total MyISAM indexes: "
-              . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
-              . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
-        }
-        if ( $mystat{'Key_read_requests'} > 0 ) {
-            if ( $mycalc{'pct_keys_from_mem'} < 95 ) {
-                badprint
-                  "Read Key buffer hit rate: $mycalc{'pct_keys_from_mem'}% ("
-                  . hr_num( $mystat{'Key_read_requests'} )
-                  . " cached / "
-                  . hr_num( $mystat{'Key_reads'} )
-                  . " reads)";
-            }
-            else {
-                goodprint
-                  "Read Key buffer hit rate: $mycalc{'pct_keys_from_mem'}% ("
-                  . hr_num( $mystat{'Key_read_requests'} )
-                  . " cached / "
-                  . hr_num( $mystat{'Key_reads'} )
-                  . " reads)";
-            }
-        }
-        else {
+        goodprint "Key buffer size / total MyISAM indexes: "
+          . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
+          . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
+    }
 
-            # No queries have run that would use keys
-            debugprint "Key buffer size / total MyISAM indexes: "
-              . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
-              . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
-        }
-        if ( $mystat{'Key_write_requests'} > 0 ) {
-            if ( $mycalc{'pct_wkeys_from_mem'} < 95 ) {
-                badprint
-                  "Write Key buffer hit rate: $mycalc{'pct_wkeys_from_mem'}% ("
-                  . hr_num( $mystat{'Key_write_requests'} )
-                  . " cached / "
-                  . hr_num( $mystat{'Key_writes'} )
-                  . " writes)";
-            }
-            else {
-                goodprint
-                  "Write Key buffer hit rate: $mycalc{'pct_wkeys_from_mem'}% ("
-                  . hr_num( $mystat{'Key_write_requests'} )
-                  . " cached / "
-                  . hr_num( $mystat{'Key_writes'} )
-                  . " writes)";
-            }
+    if ( $mystat{'Key_read_requests'} > 0 ) {
+        if ( $mycalc{'pct_keys_from_mem'} < 95 ) {
+            badprint
+              "Read Key buffer hit rate: $mycalc{'pct_keys_from_mem'}% ("
+              . hr_num( $mystat{'Key_read_requests'} )
+              . " cached / "
+              . hr_num( $mystat{'Key_reads'} )
+              . " reads)";
         }
         else {
+            goodprint
+              "Read Key buffer hit rate: $mycalc{'pct_keys_from_mem'}% ("
+              . hr_num( $mystat{'Key_read_requests'} )
+              . " cached / "
+              . hr_num( $mystat{'Key_reads'} )
+              . " reads)";
+        }
+    }
+    else {
+        # No queries have run that would use keys
+        debugprint "Key buffer size / total MyISAM indexes: "
+          . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
+          . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
+    }
 
-            # No queries have run that would use keys
-            debugprint
+    if ( $mystat{'Key_write_requests'} > 0 ) {
+        if ( $mycalc{'pct_wkeys_from_mem'} < 95 ) {
+            badprint
               "Write Key buffer hit rate: $mycalc{'pct_wkeys_from_mem'}% ("
               . hr_num( $mystat{'Key_write_requests'} )
               . " cached / "
               . hr_num( $mystat{'Key_writes'} )
               . " writes)";
         }
+        else {
+            goodprint
+              "Write Key buffer hit rate: $mycalc{'pct_wkeys_from_mem'}% ("
+              . hr_num( $mystat{'Key_write_requests'} )
+              . " cached / "
+              . hr_num( $mystat{'Key_writes'} )
+              . " writes)";
+        }
+    }
+    else {
+        # No queries have run that would use keys
+        debugprint
+          "Write Key buffer hit rate: $mycalc{'pct_wkeys_from_mem'}% ("
+          . hr_num( $mystat{'Key_write_requests'} )
+          . " cached / "
+          . hr_num( $mystat{'Key_writes'} )
+          . " writes)";
     }
 }
 
@@ -2940,21 +2789,22 @@ sub mariadb_threadpool {
         }
         return;
     }
-    if ( $myvar{'have_isam'} eq 'YES' ) {
-        if (   $myvar{'thread_pool_size'} < 4
-            or $myvar{'thread_pool_size'} > 8 )
-        {
-            badprint
-"thread_pool_size between 4 and 8 when using MyIsam storage engine.";
-            push @generalrec,
-              "Thread pool size for MyIsam usage ($myvar{'thread_pool_size'})";
-            push @adjvars,
-              "thread_pool_size between 4 and 8 for MyIsam usage";
-        }
-        else {
-            goodprint
-"thread_pool_size between 4 and 8 when using MyISAM storage engine.";
-        }
+
+    return if $myvar{'have_isam'} ne 'YES';
+
+    if (   $myvar{'thread_pool_size'} < 4
+        or $myvar{'thread_pool_size'} > 8 )
+    {
+        badprint
+          "thread_pool_size between 4 and 8 when using MyIsam storage engine.";
+        push @generalrec,
+          "Thread pool size for MyIsam usage ($myvar{'thread_pool_size'})";
+        push @adjvars,
+          "thread_pool_size between 4 and 8 for MyIsam usage";
+    }
+    else {
+        goodprint
+          "thread_pool_size between 4 and 8 when using MyISAM storage engine.";
     }
 }
 
@@ -2982,18 +2832,13 @@ sub mysqsl_pfs {
         infoprint "Performance schema is disabled.";
         return;
     }
-    else {
-        infoprint "Performance schema is enabled.";
-    }
-    infoprint "Memory used by P_S: " . hr_bytes( get_pf_memory() );
 
-    if ( grep /^sys$/, select_array("SHOW DATABASES") ) {
-        infoprint "Sys schema is installed.";
-    }
-    else {
-        infoprint "Sys schema isn't installed.";
-        return;
-    }
+    infoprint "Performance schema is enabled.";
+    infoprint "Memory used by P_S: " . hr_bytes( get_pf_memory() );
+    infoprint(
+        ( grep /^sys$/, select_array("SHOW DATABASES") )
+        ? "Sys schema is installed."
+        : "Sys schema isn't installed." );
 }
 
 # Recommendations for Ariadb
@@ -3013,53 +2858,54 @@ sub mariadb_ariadb {
     if ( !defined( $mycalc{'total_aria_indexes'} ) and $doremote == 1 ) {
         push @generalrec,
           "Unable to calculate Aria indexes on remote MySQL server < 5.0.0";
+        return;
     }
-    elsif ( $mycalc{'total_aria_indexes'} =~ /^fail$/ ) {
+
+    if ( $mycalc{'total_aria_indexes'} =~ /^fail$/ ) {
         badprint
           "Cannot calculate Aria index size - re-run script as root user";
+        return;
     }
-    elsif ( $mycalc{'total_aria_indexes'} == "0" ) {
+
+    if ( $mycalc{'total_aria_indexes'} == "0" ) {
         badprint
           "None of your Aria tables are indexed - add indexes immediately";
+        return;
+    }
+
+    if (   $myvar{'aria_pagecache_buffer_size'} < $mycalc{'total_aria_indexes'}
+        && $mycalc{'pct_aria_keys_from_mem'} < 95 )
+    {
+        badprint "Aria pagecache size / total Aria indexes: "
+          . hr_bytes( $myvar{'aria_pagecache_buffer_size'} ) . "/"
+          . hr_bytes( $mycalc{'total_aria_indexes'} ) . "";
+        push @adjvars,
+          "aria_pagecache_buffer_size (> "
+          . hr_bytes( $mycalc{'total_aria_indexes'} ) . ")";
     }
     else {
-        if ($myvar{'aria_pagecache_buffer_size'} < $mycalc{'total_aria_indexes'}
-            && $mycalc{'pct_aria_keys_from_mem'} < 95 )
-        {
-            badprint "Aria pagecache size / total Aria indexes: "
-              . hr_bytes( $myvar{'aria_pagecache_buffer_size'} ) . "/"
-              . hr_bytes( $mycalc{'total_aria_indexes'} ) . "";
-            push @adjvars,
-              "aria_pagecache_buffer_size (> "
-              . hr_bytes( $mycalc{'total_aria_indexes'} ) . ")";
-        }
-        else {
-            goodprint "Aria pagecache size / total Aria indexes: "
-              . hr_bytes( $myvar{'aria_pagecache_buffer_size'} ) . "/"
-              . hr_bytes( $mycalc{'total_aria_indexes'} ) . "";
-        }
-        if ( $mystat{'Aria_pagecache_read_requests'} > 0 ) {
-            if ( $mycalc{'pct_aria_keys_from_mem'} < 95 ) {
-                badprint
-"Aria pagecache hit rate: $mycalc{'pct_aria_keys_from_mem'}% ("
-                  . hr_num( $mystat{'Aria_pagecache_read_requests'} )
-                  . " cached / "
-                  . hr_num( $mystat{'Aria_pagecache_reads'} )
-                  . " reads)";
-            }
-            else {
-                goodprint
-"Aria pagecache hit rate: $mycalc{'pct_aria_keys_from_mem'}% ("
-                  . hr_num( $mystat{'Aria_pagecache_read_requests'} )
-                  . " cached / "
-                  . hr_num( $mystat{'Aria_pagecache_reads'} )
-                  . " reads)";
-            }
-        }
-        else {
+        goodprint "Aria pagecache size / total Aria indexes: "
+          . hr_bytes( $myvar{'aria_pagecache_buffer_size'} ) . "/"
+          . hr_bytes( $mycalc{'total_aria_indexes'} ) . "";
+    }
 
-            # No queries have run that would use keys
-        }
+    return if $mystat{'Aria_pagecache_read_requests'} <= 0;
+
+    if ( $mycalc{'pct_aria_keys_from_mem'} < 95 ) {
+        badprint
+          "Aria pagecache hit rate: $mycalc{'pct_aria_keys_from_mem'}% ("
+          . hr_num( $mystat{'Aria_pagecache_read_requests'} )
+          . " cached / "
+          . hr_num( $mystat{'Aria_pagecache_reads'} )
+          . " reads)";
+    }
+    else {
+        goodprint
+          "Aria pagecache hit rate: $mycalc{'pct_aria_keys_from_mem'}% ("
+          . hr_num( $mystat{'Aria_pagecache_read_requests'} )
+          . " cached / "
+          . hr_num( $mystat{'Aria_pagecache_reads'} )
+          . " reads)";
     }
 }
 
@@ -3067,16 +2913,10 @@ sub mariadb_ariadb {
 sub mariadb_tokudb {
     subheaderprint "TokuDB Metrics";
 
-    # AriaDB
-    unless ( defined $myvar{'have_tokudb'}
-        && $myvar{'have_tokudb'} eq "YES" )
-    {
-        infoprint "TokuDB is disabled.";
-        return;
-    }
-    infoprint "TokuDB is enabled.";
-
-    # All is to done here
+    infoprint "TokuDB is "
+      . ( defined $myvar{'have_tokudb'} && $myvar{'have_tokudb'} eq "YES" )
+      ? "enabled."
+      : "disabled.";
 }
 
 # Perl trim function to remove whitespace from the start and end of the string
@@ -3188,7 +3028,7 @@ sub mariadb_galera {
         goodprint "Innodb flush log at each commit is disabled for Galera.";
     }
 
-    infoprint "Read consistency mode :" . $myvar{'wsrep_causal_reads'};
+    infoprint "Read consistency mode :$myvar{'wsrep_causal_reads'}";
 
     if ( defined( $myvar{'wsrep_cluster_name'} )
         and $myvar{'wsrep_on'} eq "ON" )
@@ -3224,6 +3064,7 @@ sub mariadb_galera {
             push @adjvars,
               "set up wsrep_cluster_address variable for Galera replication";
         }
+
         if ( defined( $myvar{'wsrep_cluster_name'} )
             and trim( $myvar{'wsrep_cluster_name'} ) ne "" )
         {
@@ -3235,6 +3076,7 @@ sub mariadb_galera {
             push @adjvars,
               "set up wsrep_cluster_name variable for Galera replication";
         }
+
         if ( defined( $myvar{'wsrep_node_name'} )
             and trim( $myvar{'wsrep_node_name'} ) ne "" )
         {
@@ -3246,6 +3088,7 @@ sub mariadb_galera {
             push @adjvars,
               "set up wsrep_node_name variable for Galera replication";
         }
+
         if ( trim( $myvar{'wsrep_notify_cmd'} ) ne "" ) {
             goodprint "Galera Notify command is defined.";
         }
@@ -3254,6 +3097,7 @@ sub mariadb_galera {
             push @adjvars,
               "set up parameter wsrep_notify_cmd to be notify";
         }
+
         if ( trim( $myvar{'wsrep_sst_method'} ) !~ "^xtrabackup.*" ) {
             badprint "Galera SST method is not xtrabackup based.";
             push @adjvars,
@@ -3262,6 +3106,7 @@ sub mariadb_galera {
         else {
             goodprint "SST Method is based on xtrabackup.";
         }
+
         if ( trim( $myvar{'wsrep_OSU_method'} ) eq "TOI" ) {
             goodprint "TOI is default mode for upgrade.";
         }
@@ -3269,6 +3114,7 @@ sub mariadb_galera {
             badprint "Schema upgrade are not replicated automatically";
             push @adjvars, "set up parameter wsrep_OSU_method to TOI";
         }
+
         infoprint "Max WsRep message : "
           . hr_bytes( $myvar{'wsrep_max_ws_size'} );
     }
@@ -3284,6 +3130,7 @@ sub mariadb_galera {
     else {
         badprint "Node is disconnected";
     }
+
     if ( defined( $mystat{'wsrep_ready'} )
         and $mystat{'wsrep_ready'} eq "ON" )
     {
@@ -3292,6 +3139,7 @@ sub mariadb_galera {
     else {
         badprint "Node is not ready";
     }
+
     infoprint "Cluster status :" . $mystat{'wsrep_cluster_status'};
     if ( defined( $mystat{'wsrep_cluster_status'} )
         and $mystat{'wsrep_cluster_status'} eq "Primary" )
@@ -3301,6 +3149,7 @@ sub mariadb_galera {
     else {
         badprint "Cluster is not consistent and ready";
     }
+
     if ( $mystat{'wsrep_local_state_uuid'} eq
         $mystat{'wsrep_cluster_state_uuid'} )
     {
@@ -3312,6 +3161,7 @@ sub mariadb_galera {
         infoprint "Node    state uuid: " . $mystat{'wsrep_local_state_uuid'};
         infoprint "Cluster state uuid: " . $mystat{'wsrep_cluster_state_uuid'};
     }
+
     if ( $mystat{'wsrep_local_state_comment'} eq 'Synced' ) {
         goodprint "Node is synced with whole cluster.";
     }
@@ -3319,6 +3169,7 @@ sub mariadb_galera {
         badprint "Node is not synced";
         infoprint "Node State : " . $mystat{'wsrep_local_state_comment'};
     }
+
     if ( $mystat{'wsrep_local_cert_failures'} == 0 ) {
         goodprint "There is no certification failures detected.";
     }
@@ -3614,7 +3465,7 @@ sub mysql_databases {
 "SELECT TABLE_SCHEMA, SUM(TABLE_ROWS), SUM(DATA_LENGTH), SUM(INDEX_LENGTH) , SUM(DATA_LENGTH+INDEX_LENGTH), COUNT(DISTINCT ENGINE),COUNT(TABLE_NAME),COUNT(DISTINCT(TABLE_COLLATION)),COUNT(DISTINCT(ENGINE)) FROM information_schema.TABLES WHERE TABLE_SCHEMA='$_' GROUP BY TABLE_SCHEMA ORDER BY TABLE_SCHEMA"
           );
         next unless defined $dbinfo[0];
-        infoprint "Database: " . $dbinfo[0] . "";
+        infoprint "Database: $dbinfo[0]";
         infoprint " +-- TABLE: "
           . (
             !defined( $dbinfo[6] )
@@ -3650,7 +3501,7 @@ sub mysql_databases {
           . ")";
         badprint "Index size is larger than data size for $dbinfo[0] \n"
           if $dbinfo[2] < $dbinfo[3];
-        badprint "There are " . $dbinfo[5] . " storage engines. Be careful. \n"
+        badprint "There are $dbinfo[5] storage engines. Be careful. \n"
           if $dbinfo[5] > 1;
         $result{'Databases'}{ $dbinfo[0] }{'Rows'}       = $dbinfo[1];
         $result{'Databases'}{ $dbinfo[0] }{'Tables'}     = $dbinfo[6];
@@ -3664,29 +3515,23 @@ sub mysql_databases {
         $result{'Databases'}{ $dbinfo[0] }{'Total Size'} = $dbinfo[4];
 
         if ( $dbinfo[7] > 1 ) {
-            badprint $dbinfo[7]
-              . " different collations for database "
-              . $dbinfo[0];
+            badprint "$dbinfo[7] different collations for database $dbinfo[0]";
             push @generalrec,
               "Check all table collations are identical for all tables in "
               . "$dbinfo[0] database.";
         }
         else {
-            goodprint $dbinfo[7]
-              . " collation for "
-              . $dbinfo[0]
-              . " database.";
+            goodprint . "$dbinfo[7] collation for $dbinfo[0] database.";
         }
+
         if ( $dbinfo[8] > 1 ) {
-            badprint $dbinfo[8]
-              . " different engines for database "
-              . $dbinfo[0];
+            badprint "$dbinfo[8] different engines for database $dbinfo[0]";
             push @generalrec,
               "Check all table engines are identical for all tables in "
               . "$dbinfo[0] database.";
         }
         else {
-            goodprint $dbinfo[8] . " engine for " . $dbinfo[0] . " database.";
+            goodprint "$dbinfo[8] engine for $dbinfo[0] database.";
         }
 
         my @distinct_column_charset = select_array(
@@ -3784,13 +3629,13 @@ ENDSQL
         my @info = split /\s/;
         infoprint "Index: " . $info[1] . "";
 
-        infoprint " +-- COLUNM      : " . $info[0] . "";
-        infoprint " +-- NB SEQS     : " . $info[2] . " sequence(s)";
-        infoprint " +-- NB COLS     : " . $info[3] . " column(s)";
-        infoprint " +-- CARDINALITY : " . $info[4] . " distinct values";
-        infoprint " +-- NB ROWS     : " . $info[5] . " rows";
-        infoprint " +-- TYPE        : " . $info[6];
-        infoprint " +-- SELECTIVITY : " . $info[7] . "%";
+        infoprint " +-- COLUNM      : $info[0]";
+        infoprint " +-- NB SEQS     : $info[2] sequence(s)";
+        infoprint " +-- NB COLS     : $info[3] column(s)";
+        infoprint " +-- CARDINALITY : $info[4] distinct values";
+        infoprint " +-- NB ROWS     : $info[5] rows";
+        infoprint " +-- TYPE        : $info[6]";
+        infoprint " +-- SELECTIVITY : $info[7]%";
 
         $result{'Indexes'}{ $info[1] }{'Colunm'}            = $info[0];
         $result{'Indexes'}{ $info[1] }{'Sequence number'}   = $info[2];
@@ -3805,8 +3650,8 @@ ENDSQL
     }
 
     return
-      unless ( defined( $myvar{'performance_schema'} )
-        and $myvar{'performance_schema'} eq 'ON' );
+      unless defined $myvar{'performance_schema'}
+      and $myvar{'performance_schema'} eq 'ON';
 
     $selIdxReq = <<'ENDSQL';
 SELECT CONCAT(CONCAT(object_schema,'.'),object_name) AS 'table', index_name
@@ -3819,8 +3664,7 @@ ORDER BY count_star, object_schema, object_name;
 ENDSQL
     @idxinfo = select_array($selIdxReq);
     infoprint "Unused indexes:";
-    push @generalrec, "Remove unused indexes."
-      if ( scalar(@idxinfo) > 0 );
+    push @generalrec, "Remove unused indexes." if ( scalar(@idxinfo) > 0 );
     foreach (@idxinfo) {
         debugprint "$_";
         my @info = split /\s/;
@@ -3887,13 +3731,10 @@ sub file2string {
     return join( '', file2array(@_) );
 }
 
-my $templateModel;
-if ( $opt{'template'} ne 0 ) {
-    $templateModel = file2string( $opt{'template'} );
-}
-else {
-    # DEFAULT REPORT TEMPLATE
-    $templateModel = <<'END_TEMPLATE';
+my $templateModel = $opt{'template'} ne 0
+  ? file2string( $opt{'template'} )
+  # DEFAULT REPORT TEMPLATE
+  : <<'END_TEMPLATE';
 <!DOCTYPE html>
 <html>
 <head>
@@ -3910,7 +3751,6 @@ else {
 </body>
 </html>
 END_TEMPLATE
-}
 
 sub dump_result {
     if ( $opt{'debug'} ) {
@@ -3928,21 +3768,21 @@ sub dump_result {
 
         my $vars = { 'data' => Dumper( \%result ) };
 
-        my $template;
-        {
+        my $template = Text::Template->new(
+            TYPE    => 'STRING',
+            PREPEND => q{;},
+            SOURCE  => $templateModel )
+          or do {
             no warnings 'once';
-            $template = Text::Template->new(
-                TYPE    => 'STRING',
-                PREPEND => q{;},
-                SOURCE  => $templateModel )
-              or die "Couldn't construct template: $Text::Template::ERROR";
-        }
+            die "Couldn't construct template: $Text::Template::ERROR";
+          };
         open my $fh, q(>), $opt{'reportfile'}
           or die
 "Unable to open $opt{'reportfile'} in write mode. please check permissions for this file or directory";
         $template->fill_in( HASH => $vars, OUTPUT => $fh );
         close $fh;
     }
+
     if ( $opt{'json'} ne 0 ) {
         eval "{ use JSON }";
         if ($@) {
