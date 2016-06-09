@@ -48,6 +48,11 @@ use File::Basename;
 use Cwd 'abs_path';
 
 use Data::Dumper;
+
+# ---------------------------------------------------------------------------
+# BEGIN 'MAIN'
+# ---------------------------------------------------------------------------
+
 $Data::Dumper::Pair = " : ";
 
 # for which()
@@ -55,7 +60,6 @@ $Data::Dumper::Pair = " : ";
 
 # Set up a few variables for use in the script
 my $tunerversion = "1.6.13";
-my ( @adjvars, @generalrec );
 
 # Set defaults
 my %opt = (
@@ -119,6 +123,125 @@ if ( $getOptionsCheck ne 1 ) {
 
 if ( defined $opt{help} && $opt{help} == 1 ) { usage(); }
 
+my $devnull = File::Spec->devnull();
+my $basic_password_files =
+  ( $opt{passwordfile} eq "0" )
+  ? abs_path( dirname(__FILE__) ) . "/basic_passwords.txt"
+  : abs_path( $opt{passwordfile} );
+
+# for RPM distributions
+$basic_password_files = "/usr/share/mysqltuner/basic_passwords.txt"
+  unless -f "$basic_password_files";
+
+# check if we need to enable verbose mode
+if ( $opt{verbose} ) {
+    $opt{checkversion} = 1;    #Check for updates to MySQLTuner
+    $opt{dbstat}       = 1;    #Print database information
+    $opt{idxstat}      = 1;    #Print index information
+    $opt{sysstat}      = 1;    #Print index information
+    $opt{buffers}      = 1;    #Print global and per-thread buffer values
+    $opt{cvefile} = 'vulnerabilities.csv';    #CVE File for vulnerability checks
+}
+
+# for RPM distributions
+$opt{cvefile} = "/usr/share/mysqltuner/vulnerabilities.csv"
+  unless ( defined $opt{cvefile} and -f "$opt{cvefile}" );
+$opt{cvefile} = '' unless -f "$opt{cvefile}";
+$opt{cvefile} = './vulnerabilities.csv' if -f './vulnerabilities.csv';
+
+$opt{bannedports} = '' unless defined( $opt{bannedports} );
+my @banned_ports = split ',', $opt{bannedports};
+
+#
+my $outputfile = undef;
+$outputfile = abs_path( $opt{outputfile} ) unless $opt{outputfile} eq "0";
+
+my $fh = undef;
+open( $fh, '>', $outputfile )
+  or die("Fail opening $outputfile")
+  if defined($outputfile);
+$opt{nocolor} = 1 if defined($outputfile);
+
+# Setting up the colors for the print styles
+my $me = `whoami`;
+$me =~ s/\n//g;
+
+# Setting up the colors for the print styles
+my $good = ( $opt{nocolor} == 0 ) ? "[\e[0;32mOK\e[0m]"  : "[OK]";
+my $bad  = ( $opt{nocolor} == 0 ) ? "[\e[0;31m!!\e[0m]"  : "[!!]";
+my $info = ( $opt{nocolor} == 0 ) ? "[\e[0;34m--\e[0m]"  : "[--]";
+my $deb  = ( $opt{nocolor} == 0 ) ? "[\e[0;31mDG\e[0m]"  : "[DG]";
+my $cmd  = ( $opt{nocolor} == 0 ) ? "\e[1;32m[CMD]($me)" : "[CMD]($me)";
+my $end  = ( $opt{nocolor} == 0 ) ? "\e[0m"              : "";
+
+my $osname = $^O;
+if ( $osname eq 'MSWin32' ) {
+    eval { require Win32 } or last;
+    $osname = Win32::GetOSName();
+    infoprint("* Windows OS($osname) is not fully supported.\n");
+}
+
+my $templateModel = $opt{template} ne 0
+  ? file2string( $opt{template} )
+  # DEFAULT REPORT TEMPLATE
+  : <<'END_TEMPLATE';
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MySQLTuner Report</title>
+  <meta charset="UTF-8">
+</head>
+<body>
+
+<h1>Result output</h1>
+<pre>
+{$data}
+</pre>
+
+</body>
+</html>
+END_TEMPLATE
+
+my (@adjvars, @generalrec,
+    %result,    # Super structure containing all information
+    %mystat, %myvar, $dummyselect, %myrepl, %myslaves, $mysqlvermajor,
+    $mysqlverminor, $mysqlvermicro, $arch, %enginestats, %enginecount,
+    $fragtables, %mycalc,   $physical_memory, $swap_memory, $duflags,
+    $mysqllogin, $doremote, $remotestring,    $mysqlcmd,    $mysqladmincmd,
+   );
+
+headerprint();                 # Header Print
+mysql_setup();                 # Gotta login first
+validate_tuner_version();      # Check last version
+os_setup();                    # Set up some OS variables
+get_all_vars();                # Toss variables/status into hashes
+get_tuning_info();             # Get information about the tuning connexion
+validate_mysql_version();      # Check current MySQL version
+check_architecture();          # Suggest 64-bit upgrade
+system_recommendations();      # avoid to many service on the same host
+check_storage_engines();       # Show enabled storage engines
+mysql_databases();             # Show informations about databases
+mysql_indexes();               # Show informations about indexes
+security_recommendations();    # Display some security recommendations
+cve_recommendations();         # Display related CVE
+calculations();                # Calculate everything we need
+mysql_stats();                 # Print the server stats
+mysqsl_pfs();                  # Print Performance schema info
+mariadb_threadpool();          # Print MaraiDB ThreadPool stats
+mysql_myisam();                # Print MyISAM stats
+mariadb_ariadb();              # Print MaraiDB AriaDB stats
+mysql_innodb();                # Print InnoDB stats
+mariadb_tokudb();              # Print MaraiDB TokuDB stats
+mariadb_galera();              # Print MaraiDB Galera Cluster stats
+get_replication_status();      # Print replication info
+make_recommendations();        # Make recommendations based on stats
+dump_result();                 # Dump result if debug is on
+close_outputfile();            # Close reportfile if needed
+
+# ---------------------------------------------------------------------------
+# END 'MAIN'
+# ---------------------------------------------------------------------------
+
 sub usage {
 
     # Shown with --help option passed
@@ -173,60 +296,6 @@ sub usage {
       . "\n";
     exit 0;
 }
-
-my $devnull = File::Spec->devnull();
-my $basic_password_files =
-  ( $opt{passwordfile} eq "0" )
-  ? abs_path( dirname(__FILE__) ) . "/basic_passwords.txt"
-  : abs_path( $opt{passwordfile} );
-
-# for RPM distributions
-$basic_password_files = "/usr/share/mysqltuner/basic_passwords.txt"
-  unless -f "$basic_password_files";
-
-# check if we need to enable verbose mode
-if ( $opt{verbose} ) {
-    $opt{checkversion} = 1;    #Check for updates to MySQLTuner
-    $opt{dbstat}       = 1;    #Print database information
-    $opt{idxstat}      = 1;    #Print index information
-    $opt{sysstat}      = 1;    #Print index information
-    $opt{buffers}      = 1;    #Print global and per-thread buffer values
-    $opt{cvefile} = 'vulnerabilities.csv';    #CVE File for vulnerability checks
-}
-
-# for RPM distributions
-$opt{cvefile} = "/usr/share/mysqltuner/vulnerabilities.csv"
-  unless ( defined $opt{cvefile} and -f "$opt{cvefile}" );
-$opt{cvefile} = '' unless -f "$opt{cvefile}";
-$opt{cvefile} = './vulnerabilities.csv' if -f './vulnerabilities.csv';
-
-$opt{bannedports} = '' unless defined( $opt{bannedports} );
-my @banned_ports = split ',', $opt{bannedports};
-
-#
-my $outputfile = undef;
-$outputfile = abs_path( $opt{outputfile} ) unless $opt{outputfile} eq "0";
-
-my $fh = undef;
-open( $fh, '>', $outputfile )
-  or die("Fail opening $outputfile")
-  if defined($outputfile);
-$opt{nocolor} = 1 if defined($outputfile);
-
-# Setting up the colors for the print styles
-my $me = `whoami`;
-$me =~ s/\n//g;
-
-# Setting up the colors for the print styles
-my $good = ( $opt{nocolor} == 0 ) ? "[\e[0;32mOK\e[0m]"  : "[OK]";
-my $bad  = ( $opt{nocolor} == 0 ) ? "[\e[0;31m!!\e[0m]"  : "[!!]";
-my $info = ( $opt{nocolor} == 0 ) ? "[\e[0;34m--\e[0m]"  : "[--]";
-my $deb  = ( $opt{nocolor} == 0 ) ? "[\e[0;31mDG\e[0m]"  : "[DG]";
-my $cmd  = ( $opt{nocolor} == 0 ) ? "\e[1;32m[CMD]($me)" : "[CMD]($me)";
-my $end  = ( $opt{nocolor} == 0 ) ? "\e[0m"              : "";
-
-# Super structure containing all information
-my %result;
 
 # Functions that handle the print styles
 sub prettyprint {
@@ -322,8 +391,6 @@ sub pretty_uptime {
 }
 
 # Retrieves the memory installed on this machine
-my ( $physical_memory, $swap_memory, $duflags );
-
 sub memerror {
     badprint
 "Unable to determine total memory/swap; use '--forcemem' and '--forceswap'";
@@ -565,17 +632,6 @@ sub compare_tuner_version {
 }
 
 # Checks to see if a MySQL login is possible
-my ( $mysqllogin, $doremote, $remotestring, $mysqlcmd, $mysqladmincmd );
-
-my $osname = $^O;
-if ( $osname eq 'MSWin32' ) {
-    eval { require Win32; } or last;
-    $osname = Win32::GetOSName();
-    infoprint "* Windows OS($osname) is not fully supported.\n";
-
-    #exit 1;
-}
-
 sub mysql_setup {
     $doremote     = 0;
     $remotestring = '';
@@ -856,8 +912,6 @@ sub get_tuning_info {
 }
 
 # Populates all of the variable and status hashes
-my ( %mystat, %myvar, $dummyselect, %myrepl, %myslaves );
-
 sub arr2hash {
     my $href = shift;
     my $harr = shift;
@@ -1499,8 +1553,6 @@ sub get_replication_status {
 }
 
 # Checks for supported or EOL'ed MySQL versions
-my ( $mysqlvermajor, $mysqlverminor, $mysqlvermicro );
-
 sub validate_mysql_version {
     ( $mysqlvermajor, $mysqlverminor, $mysqlvermicro ) =
       $myvar{version} =~ /^(\d+)(?:\.(\d+)|)(?:\.(\d+)|)/;
@@ -1553,8 +1605,6 @@ sub mysql_micro_version_le {
 }
 
 # Checks for 32-bit boxes with more than 2GB of RAM
-my ($arch);
-
 sub check_architecture {
     return if $doremote eq 1;
     $arch = _check_architecture() || 64;
@@ -1589,8 +1639,6 @@ sub _check_architecture {
 }
 
 # Start up a ton of storage engine counts/statistics
-my ( %enginestats, %enginecount, $fragtables );
-
 sub check_storage_engines {
     if ( $opt{skipsize} eq 1 ) {
         subheaderprint "Storage Engine Statistics";
@@ -1837,8 +1885,6 @@ sub check_storage_engines {
     }
 
 }
-
-my %mycalc;
 
 sub calculations {
     if ( $mystat{Questions} < 1 ) {
@@ -3710,27 +3756,6 @@ sub file2string {
     return join( '', file2array(@_) );
 }
 
-my $templateModel = $opt{template} ne 0
-  ? file2string( $opt{template} )
-  # DEFAULT REPORT TEMPLATE
-  : <<'END_TEMPLATE';
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MySQLTuner Report</title>
-  <meta charset="UTF-8">
-</head>
-<body>
-
-<h1>Result output</h1>
-<pre>
-{$data}
-</pre>
-
-</body>
-</html>
-END_TEMPLATE
-
 sub dump_result {
     if ( $opt{debug} ) {
         debugprint Dumper( \%result );
@@ -3788,40 +3813,6 @@ sub which {
     return 0;
 }
 
-# ---------------------------------------------------------------------------
-# BEGIN 'MAIN'
-# ---------------------------------------------------------------------------
-headerprint;                 # Header Print
-mysql_setup;                 # Gotta login first
-validate_tuner_version;      # Check last version
-os_setup;                    # Set up some OS variables
-get_all_vars;                # Toss variables/status into hashes
-get_tuning_info;             # Get information about the tuning connexion
-validate_mysql_version;      # Check current MySQL version
-check_architecture;          # Suggest 64-bit upgrade
-system_recommendations;      # avoid to many service on the same host
-check_storage_engines;       # Show enabled storage engines
-mysql_databases;             # Show informations about databases
-mysql_indexes;               # Show informations about indexes
-security_recommendations;    # Display some security recommendations
-cve_recommendations;         # Display related CVE
-calculations;                # Calculate everything we need
-mysql_stats;                 # Print the server stats
-mysqsl_pfs                   # Print Performance schema info
-  mariadb_threadpool;        # Print MaraiDB ThreadPool stats
-mysql_myisam;                # Print MyISAM stats
-mariadb_ariadb;              # Print MaraiDB AriaDB stats
-mysql_innodb;                # Print InnoDB stats
-mariadb_tokudb;              # Print MaraiDB TokuDB stats
-mariadb_galera;              # Print MaraiDB Galera Cluster stats
-get_replication_status;      # Print replication info
-make_recommendations;        # Make recommendations based on stats
-dump_result;                 # Dump result if debug is on
-close_outputfile;            # Close reportfile if needed
-
-# ---------------------------------------------------------------------------
-# END 'MAIN'
-# ---------------------------------------------------------------------------
 1;
 
 __END__
