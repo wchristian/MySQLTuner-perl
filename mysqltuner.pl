@@ -952,13 +952,13 @@ sub get_all_vars {
     debugprint "VERSION: " . $dummyselect . "";
     $result{'MySQL Client'}{'Version'} = $dummyselect;
 
-    my @mysqlvarlist = select_array("SHOW VARIABLES");
-    push( @mysqlvarlist, select_array("SHOW GLOBAL VARIABLES") );
+    my @mysqlvarlist =
+      ( select_array("SHOW VARIABLES"), select_array("SHOW GLOBAL VARIABLES") );
     arr2hash( \%myvar, \@mysqlvarlist );
     $result{'Variables'} = \%myvar;
 
-    my @mysqlstatlist = select_array("SHOW STATUS");
-    push( @mysqlstatlist, select_array("SHOW GLOBAL STATUS") );
+    my @mysqlstatlist =
+      ( select_array("SHOW STATUS"), select_array("SHOW GLOBAL STATUS") );
     arr2hash( \%mystat, \@mysqlstatlist );
     $result{'Status'} = \%mystat;
 
@@ -1063,11 +1063,9 @@ sub cve_recommendations {
         return;
     }
     badprint $cvefound . " CVE(s) found for your MySQL release.";
-    push(
-        @generalrec,
-        $cvefound
-          . " CVE(s) found for your MySQL release. Consider upgrading your version !"
-        );
+    push @generalrec,
+      $cvefound
+      . " CVE(s) found for your MySQL release. Consider upgrading your version !";
 }
 
 sub get_opened_ports {
@@ -1159,7 +1157,7 @@ sub get_fs_info() {
         if ( $info =~ /(\d+)\t(.*)/ ) {
             if ( $1 > 85 ) {
                 badprint "mount point $2 is using $1 % total space";
-                push( @generalrec, "Add some space to $2 mountpoint." );
+                push @generalrec, "Add some space to $2 mountpoint.";
             }
             else {
                 infoprint "mount point $2 is using $1 % of total space";
@@ -1173,9 +1171,9 @@ sub get_fs_info() {
         if ( $info =~ /(\d+)\t(.*)/ ) {
             if ( $1 > 85 ) {
                 badprint "mount point $2 is using $1 % of max allowed inodes";
-                push(
-                    @generalrec,
-"Cleanup files from $2 mountpoint or reformat you filesystem." );
+                push @generalrec,
+                  "Cleanup files from $2 mountpoint "
+                  . "or reformat you filesystem.";
             }
             else {
                 infoprint "mount point $2 is using $1 % of max allowed inodes";
@@ -1254,7 +1252,8 @@ sub get_kernel_info() {
 "Initial TCP slot entries is < 1M, please consider having a value greater than 100";
         push @generalrec, "setup Initial TCP slot entries greater than 100";
         push @adjvars,
-'sunrpc.tcp_slot_table_entries > 100 (echo 128 > /proc/sys/sunrpc/tcp_slot_table_entries)';
+          'sunrpc.tcp_slot_table_entries > 100 '
+          . '(echo 128 > /proc/sys/sunrpc/tcp_slot_table_entries)';
     }
     else {
         infoprint "TCP slot entries is > 100.";
@@ -1343,14 +1342,12 @@ sub system_recommendations {
           . percentage( $omem, $physical_memory ) . "% ("
           . hr_bytes_rnd($omem) . " / "
           . hr_bytes_rnd($physical_memory) . ")";
-        push(
-            @generalrec,
-"Consider stopping or dedicate server for additional process other than mysqld."
-        );
-        push(
-            @adjvars,
-"DON'T APPLY SETTINGS BECAUSE THERE ARE TOO MANY PROCESSES RUNNING ON THIS SERVER. OOM KILL CAN OCCUR!"
-        );
+        push @generalrec,
+          "Consider stopping or dedicate server "
+          . "for additional process other than mysqld.";
+        push @adjvars,
+          "DON'T APPLY SETTINGS "
+          . "BECAUSE THERE ARE TOO MANY PROCESSES RUNNING ON THIS SERVER. OOM KILL CAN OCCUR!";
     }
     else {
         infoprint
@@ -1371,10 +1368,9 @@ sub system_recommendations {
               . " opened > "
               . $opt{'maxportallowed'}
               . "allowed.";
-            push(
-                @generalrec,
-"Consider dedicating a server for your database installation with less services running on !"
-            );
+            push @generalrec,
+              "Consider dedicating a server for your database installation "
+              . "with less services running on !";
         }
         else {
             goodprint "There is less than "
@@ -1386,9 +1382,9 @@ sub system_recommendations {
     foreach my $banport (@banned_ports) {
         if ( is_open_port($banport) ) {
             badprint "Banned port: $banport is opened..";
-            push(
-                @generalrec,
-"Port $banport is opened. Consider stopping program handling this port." );
+            push @generalrec,
+              "Port $banport is opened. "
+              . "Consider stopping program handling this port.";
         }
         else {
             goodprint "$banport is not opened.";
@@ -1423,11 +1419,10 @@ sub security_recommendations {
             chomp($line);
             badprint "User '" . $line . "' is an anonymous account.";
         }
-        push(
-            @generalrec,
-            "Remove Anonymous User accounts - there are "
-              . scalar(@mysqlstatlist)
-              . " anonymous accounts." );
+        push @generalrec,
+          "Remove Anonymous User accounts - there are "
+          . scalar(@mysqlstatlist)
+          . " anonymous accounts.";
     }
     else {
         goodprint "There are no anonymous accounts for any database users";
@@ -1445,10 +1440,9 @@ sub security_recommendations {
             chomp($line);
             badprint "User '" . $line . "' has no password set.";
         }
-        push(
-            @generalrec,
-"Set up a Password for user with the following SQL statement ( SET PASSWORD FOR 'user'\@'SpecificDNSorIp' = PASSWORD('secure_password'); )"
-        );
+        push @generalrec,
+          "Set up a Password for user "
+          . "with the following SQL statement ( SET PASSWORD FOR 'user'\@'SpecificDNSorIp' = PASSWORD('secure_password'); )";
     }
     else {
         goodprint "All database users have passwords assigned";
@@ -1473,10 +1467,9 @@ sub security_recommendations {
             chomp($line);
             badprint "User '" . $line . "' has user name as password.";
         }
-        push(
-            @generalrec,
-"Set up a Secure Password for user\@host ( SET PASSWORD FOR 'user'\@'SpecificDNSorIp' = PASSWORD('secure_password'); )"
-        );
+        push @generalrec,
+          "Set up a Secure Password for user\@host "
+          . "( SET PASSWORD FOR 'user'\@'SpecificDNSorIp' = PASSWORD('secure_password'); )";
     }
 
     @mysqlstatlist = select_array
@@ -1486,9 +1479,7 @@ sub security_recommendations {
             chomp($line);
             badprint "User '" . $line . "' hasn't specific host restriction.";
         }
-        push(
-            @generalrec,
-            "Restrict Host for user\@% to user\@SpecificDNSorIp" );
+        push @generalrec, "Restrict Host for user\@% to user\@SpecificDNSorIp";
     }
 
     unless ( -f $basic_password_files ) {
@@ -1532,7 +1523,7 @@ sub security_recommendations {
         }
     }
     if ( $nbins > 0 ) {
-        push( @generalrec, $nbins . " user(s) used basic or weak password." );
+        push @generalrec, "$nbins user(s) used basic or weak password.";
     }
 }
 
@@ -1820,10 +1811,9 @@ sub check_storage_engines {
                 # MySQL 3.23/4.0 keeps Data_Length in the 5th (0-based) column
                 @ixs = ( 1, 5, 8 );
             }
-            push(
-                @tblist,
-                map { [(split)[@ixs]] }
-                  select_array "SHOW TABLE STATUS FROM \\\`$db\\\`" );
+            push @tblist,
+              map { [(split)[@ixs]] }
+              select_array "SHOW TABLE STATUS FROM \\\`$db\\\`";
         }
 
         # Parse through the table list to generate storage engine counts/statistics
@@ -1860,47 +1850,41 @@ sub check_storage_engines {
         && $myvar{'have_innodb'} eq "YES" )
     {
         badprint "InnoDB is enabled but isn't being used";
-        push(
-            @generalrec,
-            "Add skip-innodb to MySQL configuration to disable InnoDB" );
+        push @generalrec,
+          "Add skip-innodb to MySQL configuration to disable InnoDB";
     }
     if (  !defined $enginestats{'BerkeleyDB'}
         && defined $myvar{'have_bdb'}
         && $myvar{'have_bdb'} eq "YES" )
     {
         badprint "BDB is enabled but isn't being used";
-        push(
-            @generalrec,
-            "Add skip-bdb to MySQL configuration to disable BDB" );
+        push @generalrec,
+          "Add skip-bdb to MySQL configuration to disable BDB";
     }
     if (  !defined $enginestats{'ISAM'}
         && defined $myvar{'have_isam'}
         && $myvar{'have_isam'} eq "YES" )
     {
         badprint "MYISAM is enabled but isn't being used";
-        push(
-            @generalrec,
-"Add skip-isam to MySQL configuration to disable ISAM (MySQL > 4.1.0)" );
+        push @generalrec,
+"Add skip-isam to MySQL configuration to disable ISAM (MySQL > 4.1.0)";
     }
 
     # Fragmented tables
     if ( $fragtables > 0 ) {
         badprint "Total fragmented tables: $fragtables";
-        push(
-            @generalrec,
-            "Run OPTIMIZE TABLE to defragment tables for better performance" );
+        push @generalrec,
+          "Run OPTIMIZE TABLE to defragment tables for better performance";
         my $total_free = 0;
         foreach my $table_line ( @{ $result{'Tables'}{'Fragmented tables'} } ) {
             my ( $table_name, $data_free ) = split( /\s+/, $table_line );
             $data_free = $data_free / 1024 / 1024;
             $total_free += $data_free;
-            push(
-                @generalrec,
-                "  OPTIMIZE TABLE $table_name; -- can free $data_free MB" );
+            push @generalrec,
+              "  OPTIMIZE TABLE $table_name; -- can free $data_free MB";
         }
-        push(
-            @generalrec,
-            "Total freed space after theses OPTIMIZE TABLE : $total_free Mb" );
+        push @generalrec,
+          "Total freed space after theses OPTIMIZE TABLE : $total_free Mb";
     }
     else {
         goodprint "Total fragmented tables: $fragtables";
@@ -1928,10 +1912,9 @@ sub check_storage_engines {
             # MySQL 3.23/4.0 keeps Data_Length in the 5th (0-based) column
             @ia = ( 0, 9 );
         }
-        push(
-            @{ $tblist{$db} },
-            map { [(split)[@ia]] }
-              select_array "SHOW TABLE STATUS FROM \\\`$db\\\`" );
+        push @{ $tblist{$db} },
+          map { [(split)[@ia]] }
+          select_array "SHOW TABLE STATUS FROM \\\`$db\\\`";
     }
 
     my @dbnames = keys %tblist;
@@ -2304,10 +2287,8 @@ sub mysql_stats {
         $qps =
           sprintf( "%.3f", $mystat{'Questions'} / $mystat{'Uptime'} );
     }
-    push(
-        @generalrec,
-        "MySQL started within last 24 hours - recommendations may be inaccurate"
-      )
+    push @generalrec,
+      "MySQL started within last 24 hours - recommendations may be inaccurate"
       if ( $mystat{'Uptime'} < 86400 );
     infoprint "Up for: "
       . pretty_uptime( $mystat{'Uptime'} ) . " ("
@@ -2411,9 +2392,8 @@ sub mysql_stats {
         badprint "Maximum possible memory usage: "
           . hr_bytes( $mycalc{'max_peak_memory'} )
           . " ($mycalc{'pct_max_physical_memory'}% of installed RAM)";
-        push(
-            @generalrec,
-            "Reduce your overall MySQL memory footprint for system stability" );
+        push @generalrec,
+          "Reduce your overall MySQL memory footprint for system stability";
     }
     else {
         goodprint "Maximum possible memory usage: "
@@ -2426,9 +2406,8 @@ sub mysql_stats {
     {
         badprint
           "Overall possible memory usage with other process exceeded memory";
-        push(
-            @generalrec,
-            "Dedicated this server to your database for highest performance." );
+        push @generalrec,
+          "Dedicated this server to your database for highest performance.";
     }
     else {
         goodprint
@@ -2447,13 +2426,12 @@ sub mysql_stats {
           . hr_num( $mystat{'Questions'} ) . ")";
     }
     if ( $myvar{'long_query_time'} > 10 ) {
-        push( @adjvars, "long_query_time (<= 10)" );
+        push @adjvars, "long_query_time (<= 10)";
     }
     if ( defined( $myvar{'log_slow_queries'} ) ) {
         if ( $myvar{'log_slow_queries'} eq "OFF" ) {
-            push(
-                @generalrec,
-                "Enable the slow query log to troubleshoot bad queries" );
+            push @generalrec,
+              "Enable the slow query log to troubleshoot bad queries";
         }
     }
 
@@ -2461,16 +2439,13 @@ sub mysql_stats {
     if ( $mycalc{'pct_connections_used'} > 85 ) {
         badprint
 "Highest connection usage: $mycalc{'pct_connections_used'}%  ($mystat{'Max_used_connections'}/$myvar{'max_connections'})";
-        push(
-            @adjvars,
-            "max_connections (> " . $myvar{'max_connections'} . ")" );
-        push(
-            @adjvars,
-            "wait_timeout (< " . $myvar{'wait_timeout'} . ")",
-            "interactive_timeout (< " . $myvar{'interactive_timeout'} . ")" );
-        push(
-            @generalrec,
-"Reduce or eliminate persistent connections to reduce connection usage" );
+        push @adjvars,
+          "max_connections (> $myvar{'max_connections'})",
+          "wait_timeout (< $myvar{'wait_timeout'})",
+          "interactive_timeout (< $myvar{'interactive_timeout'})";
+        push @generalrec,
+          "Reduce or eliminate persistent connections "
+          . "to reduce connection usage";
     }
     else {
         goodprint
@@ -2481,9 +2456,8 @@ sub mysql_stats {
     if ( $mycalc{'pct_connections_aborted'} > 3 ) {
         badprint
 "Aborted connections: $mycalc{'pct_connections_aborted'}%  ($mystat{'Aborted_connects'}/$mystat{'Connections'})";
-        push(
-            @generalrec,
-            "Reduce or eliminate unclosed connections and network issues" );
+        push @generalrec,
+          "Reduce or eliminate unclosed connections and network issues";
     }
     else {
         goodprint
@@ -2494,25 +2468,23 @@ sub mysql_stats {
     if ( $result{'Variables'}{'skip_name_resolve'} eq 'OFF' ) {
         badprint
 "name resolution is active : a reverse name resolution is made for each new connection and can reduce performance";
-        push(
-            @generalrec,
-"Configure your accounts with ip or subnets only, then update your configuration with skip-name-resolve=1"
-        );
+        push @generalrec,
+          "Configure your accounts with ip or subnets only, "
+          . "then update your configuration with skip-name-resolve=1";
     }
 
     # Query cache
     if ( !mysql_version_ge(4) ) {
 
         # MySQL versions < 4.01 don't support query caching
-        push(
-            @generalrec,
-            "Upgrade MySQL to version 4+ to utilize query caching" );
+        push @generalrec,
+          "Upgrade MySQL to version 4+ to utilize query caching";
     }
     elsif ( mysql_version_ge( 5, 5 ) and !mysql_version_ge( 10, 1 ) ) {
         if ( $myvar{'query_cache_type'} ne "OFF" ) {
             badprint
               "Query cache may be disabled by default due to mutex contention.";
-            push( @adjvars, "query_cache_type (=0)" );
+            push @adjvars, "query_cache_type (=0)";
         }
         else {
             goodprint
@@ -2521,11 +2493,11 @@ sub mysql_stats {
     }
     elsif ( $myvar{'query_cache_size'} < 1 ) {
         badprint "Query cache is disabled";
-        push( @adjvars, "query_cache_size (>= 8M)" );
+        push @adjvars, "query_cache_size (>= 8M)";
     }
     elsif ( $myvar{'query_cache_type'} eq "OFF" ) {
         badprint "Query cache is disabled";
-        push( @adjvars, "query_cache_type (=1)" );
+        push @adjvars, "query_cache_type (=1)";
     }
     elsif ( $mystat{'Com_select'} == 0 ) {
         badprint
@@ -2539,11 +2511,10 @@ sub mysql_stats {
               . " cached / "
               . hr_num( $mystat{'Qcache_hits'} + $mystat{'Com_select'} )
               . " selects)";
-            push(
-                @adjvars,
-                "query_cache_limit (> "
-                  . hr_bytes_rnd( $myvar{'query_cache_limit'} )
-                  . ", or use smaller result sets)" );
+            push @adjvars,
+              "query_cache_limit (> "
+              . hr_bytes_rnd( $myvar{'query_cache_limit'} )
+              . ", or use smaller result sets)";
         }
         else {
             goodprint
@@ -2557,20 +2528,18 @@ sub mysql_stats {
             badprint
 "Query cache prunes per day: $mycalc{'query_cache_prunes_per_day'}";
             if ( $myvar{'query_cache_size'} >= 128 * 1024 * 1024 ) {
-                push(
-                    @generalrec,
-"Increasing the query_cache size over 128M may reduce performance" );
-                push(
-                    @adjvars,
-                    "query_cache_size (> "
-                      . hr_bytes_rnd( $myvar{'query_cache_size'} )
-                      . ") [see warning above]" );
+                push @generalrec,
+                  "Increasing the query_cache size "
+                  . "over 128M may reduce performance";
+                push @adjvars,
+                  "query_cache_size (> "
+                  . hr_bytes_rnd( $myvar{'query_cache_size'} )
+                  . ") [see warning above]";
             }
             else {
-                push(
-                    @adjvars,
-                    "query_cache_size (> "
-                      . hr_bytes_rnd( $myvar{'query_cache_size'} ) . ")" );
+                push @adjvars,
+                  "query_cache_size (> "
+                  . hr_bytes_rnd( $myvar{'query_cache_size'} ) . ")";
             }
         }
         else {
@@ -2590,14 +2559,11 @@ sub mysql_stats {
           . " temp sorts / "
           . hr_num( $mycalc{'total_sorts'} )
           . " sorts)";
-        push(
-            @adjvars,
-            "sort_buffer_size (> "
-              . hr_bytes_rnd( $myvar{'sort_buffer_size'} ) . ")" );
-        push(
-            @adjvars,
-            "read_rnd_buffer_size (> "
-              . hr_bytes_rnd( $myvar{'read_rnd_buffer_size'} ) . ")" );
+        push @adjvars,
+          "sort_buffer_size (> "
+          . hr_bytes_rnd( $myvar{'sort_buffer_size'} ) . ")",
+          "read_rnd_buffer_size (> "
+          . hr_bytes_rnd( $myvar{'read_rnd_buffer_size'} ) . ")";
     }
     else {
         goodprint
@@ -2612,14 +2578,12 @@ sub mysql_stats {
     if ( $mycalc{'joins_without_indexes_per_day'} > 250 ) {
         badprint
           "Joins performed without indexes: $mycalc{'joins_without_indexes'}";
-        push(
-            @adjvars,
-            "join_buffer_size (> "
-              . hr_bytes( $myvar{'join_buffer_size'} )
-              . ", or always use indexes with joins)" );
-        push(
-            @generalrec,
-            "Adjust your join queries to always utilize indexes" );
+        push @adjvars,
+          "join_buffer_size (> "
+          . hr_bytes( $myvar{'join_buffer_size'} )
+          . ", or always use indexes with joins)";
+        push @generalrec,
+          "Adjust your join queries to always utilize indexes";
     }
     else {
         goodprint "No joins without indexes";
@@ -2638,21 +2602,15 @@ sub mysql_stats {
               . " on disk / "
               . hr_num( $mystat{'Created_tmp_tables'} )
               . " total)";
-            push(
-                @adjvars,
-                "tmp_table_size (> "
-                  . hr_bytes_rnd( $myvar{'tmp_table_size'} ) . ")" );
-            push(
-                @adjvars,
-                "max_heap_table_size (> "
-                  . hr_bytes_rnd( $myvar{'max_heap_table_size'} ) . ")" );
-            push(
-                @generalrec,
-"When making adjustments, make tmp_table_size/max_heap_table_size equal" );
-            push(
-                @generalrec,
-                "Reduce your SELECT DISTINCT queries which have no LIMIT clause"
-            );
+            push @adjvars,
+              "tmp_table_size (> "
+              . hr_bytes_rnd( $myvar{'tmp_table_size'} ) . ")",
+              "max_heap_table_size (> "
+              . hr_bytes_rnd( $myvar{'max_heap_table_size'} ) . ")";
+            push @generalrec,
+              "When making adjustments, "
+              . "make tmp_table_size/max_heap_table_size equal",
+              "Reduce your SELECT DISTINCT queries which have no LIMIT clause";
         }
         elsif ($mycalc{'pct_temp_disk'} > 25
             && $mycalc{'max_tmp_table_size'} >= 256 * 1024 * 1024 )
@@ -2663,13 +2621,9 @@ sub mysql_stats {
               . " on disk / "
               . hr_num( $mystat{'Created_tmp_tables'} )
               . " total)";
-            push(
-                @generalrec,
-                "Temporary table size is already large - reduce result set size"
-            );
-            push(
-                @generalrec,
-                "Reduce your SELECT DISTINCT queries without LIMIT clauses" );
+            push @generalrec,
+              "Temporary table size is already large - reduce result set size",
+              "Reduce your SELECT DISTINCT queries without LIMIT clauses";
         }
         else {
             goodprint
@@ -2725,28 +2679,17 @@ sub mysql_stats {
                 $table_cache_var = "table_cache";
             }
 
-            push(
-                @adjvars,
-                $table_cache_var . " (> " . $myvar{$table_cache_var} . ")" );
-            push(
-                @generalrec,
-                "Increase "
-                  . $table_cache_var
-                  . " gradually to avoid file descriptor limits" );
-            push(
-                @generalrec,
-                "Read this before increasing "
-                  . $table_cache_var
-                  . " over 64: http://bit.ly/1mi7c4C" );
-            push(
-                @generalrec,
-                "Beware that open_files_limit ("
-                  . $myvar{'open_files_limit'}
-                  . ") variable " );
-            push(
-                @generalrec,
-                "should be greater than $table_cache_var ( "
-                  . $myvar{$table_cache_var} . ")" );
+            push @adjvars,
+              $table_cache_var . " (> " . $myvar{$table_cache_var} . ")";
+            push @generalrec,
+              "Increase $table_cache_var"
+              . " gradually to avoid file descriptor limits",
+              "Read this before increasing $table_cache_var"
+              . " over 64: http://bit.ly/1mi7c4C",
+              "Beware that open_files_limit ($myvar{'open_files_limit'}"
+              . ") variable ",
+              "should be greater than $table_cache_var ( "
+              . "$myvar{$table_cache_var})";
         }
         else {
             goodprint
@@ -2764,9 +2707,8 @@ sub mysql_stats {
             badprint "Open file limit used: $mycalc{'pct_files_open'}% ("
               . hr_num( $mystat{'Open_files'} ) . "/"
               . hr_num( $myvar{'open_files_limit'} ) . ")";
-            push(
-                @adjvars,
-                "open_files_limit (> " . $myvar{'open_files_limit'} . ")" );
+            push @adjvars,
+              "open_files_limit (> $myvar{'open_files_limit'})";
         }
         else {
             goodprint "Open file limit used: $mycalc{'pct_files_open'}% ("
@@ -2780,9 +2722,8 @@ sub mysql_stats {
         if ( $mycalc{'pct_table_locks_immediate'} < 95 ) {
             badprint
 "Table locks acquired immediately: $mycalc{'pct_table_locks_immediate'}%";
-            push(
-                @generalrec,
-                "Optimize queries and/or use InnoDB to reduce lock wait" );
+            push @generalrec,
+              "Optimize queries and/or use InnoDB to reduce lock wait";
         }
         else {
             goodprint
@@ -2807,15 +2748,13 @@ sub mysql_stats {
               . " Memory / "
               . $mystat{'Binlog_cache_use'}
               . " Total)";
-            push(
-                @generalrec,
-                "Increase binlog_cache_size (Actual value: "
-                  . $myvar{'binlog_cache_size'} . ") " );
-            push(
-                @adjvars,
-                "binlog_cache_size ("
-                  . hr_bytes( $myvar{'binlog_cache_size'} + 16 * 1024 * 1024 )
-                  . " ) " );
+            push @generalrec,
+              "Increase binlog_cache_size (Actual value: "
+              . "$myvar{'binlog_cache_size'}) ";
+            push @adjvars,
+              "binlog_cache_size ("
+              . hr_bytes( $myvar{'binlog_cache_size'} + 16 * 1024 * 1024 )
+              . " ) ";
         }
         else {
             goodprint "Binlog cache memory access: "
@@ -2831,15 +2770,14 @@ sub mysql_stats {
     }
 
     # Performance options
-    if ( !mysql_version_ge( 5, 1 ) ) {
-        push( @generalrec, "Upgrade to MySQL 5.5+ to use asynchronous write" );
-    }
-    elsif ( $myvar{'concurrent_insert'} eq "OFF" ) {
-        push( @generalrec, "Enable concurrent_insert by setting it to 'ON'" );
-    }
-    elsif ( $myvar{'concurrent_insert'} eq 0 ) {
-        push( @generalrec, "Enable concurrent_insert by setting it to 1" );
-    }
+    push @generalrec,
+      !mysql_version_ge( 5, 1 )
+      ? "Upgrade to MySQL 5.5+ to use asynchronous write"
+      : $myvar{'concurrent_insert'} eq "OFF"
+      ? "Enable concurrent_insert by setting it to 'ON'"
+      : $myvar{'concurrent_insert'} eq 0
+      ? "Enable concurrent_insert by setting it to 1"
+      : ();
 }
 
 # Recommendations for MyISAM
@@ -2882,10 +2820,8 @@ sub mysql_myisam {
 
     # Key buffer
     if ( !defined( $mycalc{'total_myisam_indexes'} ) and $doremote == 1 ) {
-        push(
-            @generalrec,
-            "Unable to calculate MyISAM indexes on remote MySQL server < 5.0.0"
-        );
+        push @generalrec,
+          "Unable to calculate MyISAM indexes on remote MySQL server < 5.0.0";
     }
     elsif ( $mycalc{'total_myisam_indexes'} =~ /^fail$/ ) {
         badprint
@@ -2902,10 +2838,9 @@ sub mysql_myisam {
             badprint "Key buffer size / total MyISAM indexes: "
               . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
               . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
-            push(
-                @adjvars,
-                "key_buffer_size (> "
-                  . hr_bytes( $mycalc{'total_myisam_indexes'} ) . ")" );
+            push @adjvars,
+              "key_buffer_size (> "
+              . hr_bytes( $mycalc{'total_myisam_indexes'} ) . ")";
         }
         else {
             goodprint "Key buffer size / total MyISAM indexes: "
@@ -2994,13 +2929,10 @@ sub mariadb_threadpool {
         {
             badprint
 "thread_pool_size between 16 and 36 when using InnoDB storage engine.";
-            push(
-                @generalrec,
-                "Thread pool size for InnoDB usage ("
-                  . $myvar{'thread_pool_size'} . ")" );
-            push(
-                @adjvars,
-                "thread_pool_size between 16 and 36 for InnoDB usage" );
+            push @generalrec,
+              "Thread pool size for InnoDB usage ($myvar{'thread_pool_size'})";
+            push @adjvars,
+              "thread_pool_size between 16 and 36 for InnoDB usage";
         }
         else {
             goodprint
@@ -3014,13 +2946,10 @@ sub mariadb_threadpool {
         {
             badprint
 "thread_pool_size between 4 and 8 when using MyIsam storage engine.";
-            push(
-                @generalrec,
-                "Thread pool size for MyIsam usage ("
-                  . $myvar{'thread_pool_size'} . ")" );
-            push(
-                @adjvars,
-                "thread_pool_size between 4 and 8 for MyIsam usage" );
+            push @generalrec,
+              "Thread pool size for MyIsam usage ($myvar{'thread_pool_size'})";
+            push @adjvars,
+              "thread_pool_size between 4 and 8 for MyIsam usage";
         }
         else {
             goodprint
@@ -3082,9 +3011,8 @@ sub mariadb_ariadb {
 
     # Aria pagecache
     if ( !defined( $mycalc{'total_aria_indexes'} ) and $doremote == 1 ) {
-        push(
-            @generalrec,
-            "Unable to calculate Aria indexes on remote MySQL server < 5.0.0" );
+        push @generalrec,
+          "Unable to calculate Aria indexes on remote MySQL server < 5.0.0";
     }
     elsif ( $mycalc{'total_aria_indexes'} =~ /^fail$/ ) {
         badprint
@@ -3101,10 +3029,9 @@ sub mariadb_ariadb {
             badprint "Aria pagecache size / total Aria indexes: "
               . hr_bytes( $myvar{'aria_pagecache_buffer_size'} ) . "/"
               . hr_bytes( $mycalc{'total_aria_indexes'} ) . "";
-            push(
-                @adjvars,
-                "aria_pagecache_buffer_size (> "
-                  . hr_bytes( $mycalc{'total_aria_indexes'} ) . ")" );
+            push @adjvars,
+              "aria_pagecache_buffer_size (> "
+              . hr_bytes( $mycalc{'total_aria_indexes'} ) . ")";
         }
         else {
             goodprint "Aria pagecache size / total Aria indexes: "
@@ -3324,13 +3251,13 @@ sub mariadb_galera {
         }
         else {
             badprint "Galera Notify command is not defined.";
-            push( @adjvars, "set up parameter wsrep_notify_cmd to be notify" );
+            push @adjvars,
+              "set up parameter wsrep_notify_cmd to be notify";
         }
         if ( trim( $myvar{'wsrep_sst_method'} ) !~ "^xtrabackup.*" ) {
             badprint "Galera SST method is not xtrabackup based.";
-            push(
-                @adjvars,
-"set up parameter wsrep_sst_method to xtrabackup based parameter" );
+            push @adjvars,
+              "set up parameter wsrep_sst_method to xtrabackup based parameter";
         }
         else {
             goodprint "SST Method is based on xtrabackup.";
@@ -3340,7 +3267,7 @@ sub mariadb_galera {
         }
         else {
             badprint "Schema upgrade are not replicated automatically";
-            push( @adjvars, "set up parameter wsrep_OSU_method to TOI" );
+            push @adjvars, "set up parameter wsrep_OSU_method to TOI";
         }
         infoprint "Max WsRep message : "
           . hr_bytes( $myvar{'wsrep_max_ws_size'} );
@@ -3465,11 +3392,10 @@ sub mysql_innodb {
         badprint "InnoDB buffer pool / data size: "
           . hr_bytes( $myvar{'innodb_buffer_pool_size'} ) . "/"
           . hr_bytes( $enginestats{'InnoDB'} ) . "";
-        push(
-            @adjvars,
-            "innodb_buffer_pool_size (>= "
-              . hr_bytes_rnd( $enginestats{'InnoDB'} )
-              . ") if possible." );
+        push @adjvars,
+          "innodb_buffer_pool_size (>= "
+          . hr_bytes_rnd( $enginestats{'InnoDB'} )
+          . ") if possible.";
     }
 
     # InnoDB Buffer Pull Instances (MySQL 5.6.6+)
@@ -3479,7 +3405,7 @@ sub mysql_innodb {
         if ( $myvar{'innodb_buffer_pool_instances'} > 64 ) {
             badprint "InnoDB buffer pool instances: "
               . $myvar{'innodb_buffer_pool_instances'} . "";
-            push( @adjvars, "innodb_buffer_pool_instances (<= 64)" );
+            push @adjvars, "innodb_buffer_pool_instances (<= 64)";
         }
 
         # InnoDB Buffer Pull Size > 1Go
@@ -3498,10 +3424,9 @@ sub mysql_innodb {
             {
                 badprint "InnoDB buffer pool instances: "
                   . $myvar{'innodb_buffer_pool_instances'} . "";
-                push(
-                    @adjvars,
-                    "innodb_buffer_pool_instances(="
-                      . $max_innodb_buffer_pool_instances . ")" );
+                push @adjvars,
+                  "innodb_buffer_pool_instances(="
+                  . $max_innodb_buffer_pool_instances . ")";
             }
             else {
                 goodprint "InnoDB buffer pool instances: "
@@ -3514,7 +3439,7 @@ sub mysql_innodb {
             if ( $myvar{'innodb_buffer_pool_instances'} != 1 ) {
                 badprint
 "InnoDB buffer pool <= 1G and innodb_buffer_pool_instances(!=1).";
-                push( @adjvars, "innodb_buffer_pool_instances (=1)" );
+                push @adjvars, "innodb_buffer_pool_instances (=1)";
             }
             else {
                 goodprint "InnoDB buffer pool instances: "
@@ -3601,10 +3526,9 @@ sub mysql_innodb {
           . " waits / "
           . $mystat{'Innodb_log_writes'}
           . " writes)";
-        push(
-            @adjvars,
-            "innodb_log_buffer_size (>= "
-              . hr_bytes_rnd( $myvar{'innodb_log_buffer_size'} ) . ")" );
+        push @adjvars,
+          "innodb_log_buffer_size (>= "
+          . hr_bytes_rnd( $myvar{'innodb_log_buffer_size'} ) . ")";
     }
     else {
         goodprint "InnoDB log waits: " . percentage(
@@ -3743,11 +3667,9 @@ sub mysql_databases {
             badprint $dbinfo[7]
               . " different collations for database "
               . $dbinfo[0];
-            push(
-                @generalrec,
-                "Check all table collations are identical for all tables in "
-                  . $dbinfo[0]
-                  . " database." );
+            push @generalrec,
+              "Check all table collations are identical for all tables in "
+              . "$dbinfo[0] database.";
         }
         else {
             goodprint $dbinfo[7]
@@ -3759,11 +3681,9 @@ sub mysql_databases {
             badprint $dbinfo[8]
               . " different engines for database "
               . $dbinfo[0];
-            push(
-                @generalrec,
-                "Check all table engines are identical for all tables in "
-                  . $dbinfo[0]
-                  . " database." );
+            push @generalrec,
+              "Check all table engines are identical for all tables in "
+              . "$dbinfo[0] database.";
         }
         else {
             goodprint $dbinfo[8] . " engine for " . $dbinfo[0] . " database.";
@@ -3777,11 +3697,9 @@ sub mysql_databases {
         if ( scalar(@distinct_column_charset) > 1 ) {
             badprint $dbinfo[0]
               . " table column(s) has  several charsets defined for all text like column(s).";
-            push(
-                @generalrec,
-                "Limit charset for column to one charset if possible for "
-                  . $dbinfo[0]
-                  . " database." );
+            push @generalrec,
+              "Limit charset for column to one charset if possible for "
+              . "$dbinfo[0] database.";
         }
         else {
             goodprint $dbinfo[0]
@@ -3796,11 +3714,9 @@ sub mysql_databases {
         if ( scalar(@distinct_column_collation) > 1 ) {
             badprint $dbinfo[0]
               . " table column(s) has  several collations defined for all text like column(s).";
-            push(
-                @generalrec,
-                "Limit collations for column to one collation if possible for "
-                  . $dbinfo[0]
-                  . " database." );
+            push @generalrec,
+              "Limit collations for column to one collation if possible for "
+              . "$dbinfo[0] database.";
         }
         else {
             goodprint $dbinfo[0]
@@ -3903,13 +3819,13 @@ ORDER BY count_star, object_schema, object_name;
 ENDSQL
     @idxinfo = select_array($selIdxReq);
     infoprint "Unused indexes:";
-    push( @generalrec, "Remove unused indexes." ) if ( scalar(@idxinfo) > 0 );
+    push @generalrec, "Remove unused indexes."
+      if ( scalar(@idxinfo) > 0 );
     foreach (@idxinfo) {
         debugprint "$_";
         my @info = split /\s/;
         badprint "Index: $info[1] on $info[0] is not used.";
-        push @{ $result{'Indexes'}{'Unused Indexes'} },
-          $info[0] . "." . $info[1];
+        push @{ $result{'Indexes'}{'Unused Indexes'} }, join ".", @info;
     }
 }
 
