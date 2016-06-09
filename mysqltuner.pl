@@ -117,7 +117,7 @@ if ( $getOptionsCheck ne 1 ) {
     usage();
 }
 
-if ( defined $opt{'help'} && $opt{'help'} == 1 ) { usage(); }
+if ( defined $opt{help} && $opt{help} == 1 ) { usage(); }
 
 sub usage {
 
@@ -200,8 +200,8 @@ $opt{cvefile} = "/usr/share/mysqltuner/vulnerabilities.csv"
 $opt{cvefile} = '' unless -f "$opt{cvefile}";
 $opt{cvefile} = './vulnerabilities.csv' if -f './vulnerabilities.csv';
 
-$opt{'bannedports'} = '' unless defined( $opt{'bannedports'} );
-my @banned_ports = split ',', $opt{'bannedports'};
+$opt{bannedports} = '' unless defined( $opt{bannedports} );
+my @banned_ports = split ',', $opt{bannedports};
 
 #
 my $outputfile = undef;
@@ -230,7 +230,7 @@ my %result;
 
 # Functions that handle the print styles
 sub prettyprint {
-    print $_[0] . "\n" unless ( $opt{'silent'} or $opt{'json'} );
+    print $_[0] . "\n" unless ( $opt{silent} or $opt{json} );
     print $fh $_[0] . "\n" if defined($fh);
 }
 sub goodprint  { prettyprint $good. " " . $_[0] unless ( $opt{nogood} == 1 ); }
@@ -333,13 +333,13 @@ sub memerror {
 sub os_setup {
     my $os = `uname`;
     $duflags = ( $os =~ /Linux/ ) ? '-b' : '';
-    if ( $opt{'forcemem'} > 0 ) {
-        $physical_memory = $opt{'forcemem'} * 1048576;
-        infoprint "Assuming $opt{'forcemem'} MB of physical memory";
+    if ( $opt{forcemem} > 0 ) {
+        $physical_memory = $opt{forcemem} * 1048576;
+        infoprint "Assuming $opt{forcemem} MB of physical memory";
         $swap_memory = do {
-            if ( $opt{'forceswap'} > 0 ) {
-                infoprint "Assuming $opt{'forceswap'} MB of swap space";
-                $opt{'forceswap'} * 1048576;
+            if ( $opt{forceswap} > 0 ) {
+                infoprint "Assuming $opt{forceswap} MB of swap space";
+                $opt{forceswap} * 1048576;
             }
             else {
                 badprint
@@ -412,24 +412,24 @@ sub os_setup {
     chomp($physical_memory);
     chomp($swap_memory);
     chomp($os);
-    $result{'OS'}{'OS Type'}                   = $os;
-    $result{'OS'}{'Physical Memory'}{'bytes'}  = $physical_memory;
-    $result{'OS'}{'Physical Memory'}{'pretty'} = hr_bytes($physical_memory);
-    $result{'OS'}{'Swap Memory'}{'bytes'}      = $swap_memory;
-    $result{'OS'}{'Swap Memory'}{'pretty'}     = hr_bytes($swap_memory);
-    $result{'OS'}{'Other Processes'}{'bytes'}  = get_other_process_memory();
-    $result{'OS'}{'Other Processes'}{'pretty'} =
+    $result{OS}{'OS Type'}                 = $os;
+    $result{OS}{'Physical Memory'}{bytes}  = $physical_memory;
+    $result{OS}{'Physical Memory'}{pretty} = hr_bytes($physical_memory);
+    $result{OS}{'Swap Memory'}{bytes}      = $swap_memory;
+    $result{OS}{'Swap Memory'}{pretty}     = hr_bytes($swap_memory);
+    $result{OS}{'Other Processes'}{bytes}  = get_other_process_memory();
+    $result{OS}{'Other Processes'}{pretty} =
       hr_bytes( get_other_process_memory() );
 }
 
 sub get_http_cli {
-    my $httpcli = which( "curl", $ENV{'PATH'} );
+    my $httpcli = which( "curl", $ENV{PATH} );
     chomp($httpcli);
     if ($httpcli) {
         return $httpcli;
     }
 
-    $httpcli = which( "wget", $ENV{'PATH'} );
+    $httpcli = which( "wget", $ENV{PATH} );
     chomp($httpcli);
     if ($httpcli) {
         return $httpcli;
@@ -439,8 +439,8 @@ sub get_http_cli {
 
 # Checks for updates to MySQLTuner
 sub validate_tuner_version {
-    if ( $opt{'checkversion'} eq 0 and $opt{'updateversion'} eq 0 ) {
-        print "\n" unless ( $opt{'silent'} or $opt{'json'} );
+    if ( $opt{checkversion} eq 0 and $opt{updateversion} eq 0 ) {
+        print "\n" unless ( $opt{silent} or $opt{json} );
         infoprint "Skipped version check for MySQLTuner script";
         return;
     }
@@ -480,9 +480,9 @@ sub validate_tuner_version {
 
 # Checks for updates to MySQLTuner
 sub update_tuner_version {
-    if ( $opt{'updateversion'} eq 0 ) {
+    if ( $opt{updateversion} eq 0 ) {
         badprint "Skipped version update for MySQLTuner script";
-        print "\n" unless ( $opt{'silent'} or $opt{'json'} );
+        print "\n" unless ( $opt{silent} or $opt{json} );
         return;
     }
 
@@ -581,7 +581,7 @@ sub mysql_setup {
     $remotestring = '';
 
     $mysqladmincmd =
-      $opt{mysqladmin} ? $opt{mysqladmin} : which( "mysqladmin", $ENV{'PATH'} );
+      $opt{mysqladmin} ? $opt{mysqladmin} : which( "mysqladmin", $ENV{PATH} );
     chomp($mysqladmincmd);
     if ( !-e $mysqladmincmd ) {
         badprint $opt{mysqladmin}
@@ -592,7 +592,7 @@ sub mysql_setup {
     }
 
     $mysqlcmd =
-      $opt{mysqlcmd} ? $opt{mysqlcmd} : which( "mysql", $ENV{'PATH'} );
+      $opt{mysqlcmd} ? $opt{mysqlcmd} : which( "mysql", $ENV{PATH} );
     chomp($mysqlcmd);
     if ( !-e $mysqlcmd ) {
         badprint $opt{mysqlcmd}
@@ -621,7 +621,7 @@ sub mysql_setup {
         $opt{port} = $opt{port} eq 0 ? 3306 : $opt{port};
 
         # If we're doing a remote connection, but forcemem wasn't specified, we need to exit
-        if (    $opt{'forcemem'} eq 0
+        if (    $opt{forcemem} eq 0
             and $opt{host} ne "127.0.0.1"
             and $opt{host} ne "localhost" )
         {
@@ -659,7 +659,7 @@ sub mysql_setup {
         exit 1;
     }
 
-    my $svcprop = which( "svcprop", $ENV{'PATH'} );
+    my $svcprop = which( "svcprop", $ENV{PATH} );
     if ( substr( $svcprop, 0, 1 ) =~ "/" ) {    # We are on solaris
         ( my $mysql_login =
 `svcprop -p quickbackup/username svc:/network/mysql-quickbackup:default`
@@ -751,7 +751,7 @@ sub mysql_setup {
         return;
     }
 
-    if ( $opt{'noask'} == 1 ) {
+    if ( $opt{noask} == 1 ) {
         badprint "Attempted to use login credentials, but they were invalid";
         exit 1;
     }
@@ -875,36 +875,36 @@ sub get_all_vars {
     # We need to initiate at least one query so that our data is useable
     $dummyselect = select_one "SELECT VERSION()";
     debugprint "VERSION: " . $dummyselect . "";
-    $result{'MySQL Client'}{'Version'} = $dummyselect;
+    $result{'MySQL Client'}{Version} = $dummyselect;
 
     my @mysqlvarlist =
       ( select_array("SHOW VARIABLES"), select_array("SHOW GLOBAL VARIABLES") );
     arr2hash( \%myvar, \@mysqlvarlist );
-    $result{'Variables'} = \%myvar;
+    $result{Variables} = \%myvar;
 
     my @mysqlstatlist =
       ( select_array("SHOW STATUS"), select_array("SHOW GLOBAL STATUS") );
     arr2hash( \%mystat, \@mysqlstatlist );
-    $result{'Status'} = \%mystat;
+    $result{Status} = \%mystat;
 
-    $myvar{'have_galera'} = "NO";
-    if ( defined( $myvar{'wsrep_provider_options'} )
-        && $myvar{'wsrep_provider_options'} ne "" )
+    $myvar{have_galera} = "NO";
+    if ( defined( $myvar{wsrep_provider_options} )
+        && $myvar{wsrep_provider_options} ne "" )
     {
-        $myvar{'have_galera'} = "YES";
-        debugprint "Galera options: " . $myvar{'wsrep_provider_options'};
+        $myvar{have_galera} = "YES";
+        debugprint "Galera options: " . $myvar{wsrep_provider_options};
     }
 
     # Workaround for MySQL bug #59393 wrt. ignore-builtin-innodb
-    if ( ( $myvar{'ignore_builtin_innodb'} || "" ) eq "ON" ) {
-        $myvar{'have_innodb'} = "NO";
+    if ( ( $myvar{ignore_builtin_innodb} || "" ) eq "ON" ) {
+        $myvar{have_innodb} = "NO";
     }
 
-    $myvar{'have_threadpool'} = "NO";
-    if ( defined( $myvar{'thread_pool_size'} )
-        and $myvar{'thread_pool_size'} > 0 )
+    $myvar{have_threadpool} = "NO";
+    if ( defined( $myvar{thread_pool_size} )
+        and $myvar{thread_pool_size} > 0 )
     {
-        $myvar{'have_threadpool'} = "YES";
+        $myvar{have_threadpool} = "YES";
     }
 
     # have_* for engines is deprecated and will be removed in MySQL 5.6;
@@ -929,14 +929,14 @@ sub get_all_vars {
     debugprint Dumper(@mysqlenginelist);
     my @mysqlslave = select_array("SHOW SLAVE STATUS\\G");
     arr2hash( \%myrepl, \@mysqlslave, ':' );
-    $result{'Replication'}{'Status'} = \%myrepl;
+    $result{Replication}{Status} = \%myrepl;
     my @mysqlslaves = select_array "SHOW SLAVE HOSTS";
     my @lineitems   = ();
     for my $line (@mysqlslaves) {
         debugprint "L: $line ";
         @lineitems = split /\s+/, $line;
         $myslaves{ $lineitems[0] } = $line;
-        $result{'Replication'}{'Slaves'}{ $lineitems[0] } = $lineitems[4];
+        $result{Replication}{Slaves}{ $lineitems[0] } = $lineitems[4];
     }
 }
 
@@ -969,20 +969,20 @@ sub cve_recommendations {
         return;
     }
 
-    #prettyprint "Look for related CVE for $myvar{'version'} or lower in $opt{cvefile}";
+    #prettyprint "Look for related CVE for $myvar{version} or lower in $opt{cvefile}";
     my $cvefound = 0;
     open( FH, "<$opt{cvefile}" ) or die "Can't open $opt{cvefile} for read: $!";
     while ( my $cveline = <FH> ) {
         my @cve = split( ';', $cveline );
         if ( mysql_micro_version_le( $cve[1], $cve[2], $cve[3] ) ) {
             badprint "$cve[4] : $cve[5]";
-            $result{'CVE'}{'List'}{$cvefound} = "$cve[4] : $cve[5]";
+            $result{CVE}{List}{$cvefound} = "$cve[4] : $cve[5]";
             $cvefound++;
         }
 
     }
     close FH or die "Cannot close $opt{cvefile}: $!";
-    $result{'CVE'}{'nb'} = $cvefound;
+    $result{CVE}{nb} = $cvefound;
     if ( $cvefound == 0 ) {
         goodprint "NO SECURITY CVE FOUND FOR YOUR VERSION";
         return;
@@ -1279,22 +1279,22 @@ sub system_recommendations {
           . hr_bytes_rnd($physical_memory) . ")";
     }
 
-    if ( $opt{'maxportallowed'} > 0 ) {
+    if ( $opt{maxportallowed} > 0 ) {
         my @opened_ports = get_opened_ports;
         infoprint "There is "
           . scalar @opened_ports
           . " listening port(s) on this server.";
-        if ( scalar(@opened_ports) > $opt{'maxportallowed'} ) {
+        if ( scalar(@opened_ports) > $opt{maxportallowed} ) {
             badprint "There is too many listening ports: "
               . scalar(@opened_ports)
-              . " opened > $opt{'maxportallowed'} allowed.";
+              . " opened > $opt{maxportallowed} allowed.";
             push @generalrec,
               "Consider dedicating a server for your database installation "
               . "with less services running on !";
         }
         else {
             goodprint "There is less than "
-              . "$opt{'maxportallowed'} opened ports on this server.";
+              . "$opt{maxportallowed} opened ports on this server.";
         }
     }
 
@@ -1322,7 +1322,7 @@ sub security_recommendations {
     }
 
     my $PASS_COLUMN_NAME =
-      $myvar{'version'} =~ /5.7/ ? 'authentication_string' : 'password';
+      $myvar{version} =~ /5.7/ ? 'authentication_string' : 'password';
     debugprint "Password column = $PASS_COLUMN_NAME";
 
     # Looking for Anonymous users
@@ -1447,7 +1447,7 @@ sub security_recommendations {
 
 sub get_replication_status {
     subheaderprint "Replication Metrics";
-    infoprint "Galera Synchronous replication: " . $myvar{'have_galera'};
+    infoprint "Galera Synchronous replication: " . $myvar{have_galera};
     infoprint scalar( keys %myslaves ) == 0
       ? "No replication slave(s) for this server."
       : "This server is acting as master for "
@@ -1461,11 +1461,11 @@ sub get_replication_status {
         return;
     }
 
-    my ($io_running) = $myrepl{'Slave_IO_Running'};
+    my ($io_running) = $myrepl{Slave_IO_Running};
     debugprint "IO RUNNING: $io_running ";
-    my ($sql_running) = $myrepl{'Slave_SQL_Running'};
+    my ($sql_running) = $myrepl{Slave_SQL_Running};
     debugprint "SQL RUNNING: $sql_running ";
-    my ($seconds_behind_master) = $myrepl{'Seconds_Behind_Master'};
+    my ($seconds_behind_master) = $myrepl{Seconds_Behind_Master};
     debugprint "SECONDS : $seconds_behind_master ";
 
     if ( defined($io_running)
@@ -1479,7 +1479,7 @@ sub get_replication_status {
         && $io_running =~ /yes/i
         && $sql_running =~ /yes/i )
     {
-        if ( $myvar{'read_only'} eq 'OFF' ) {
+        if ( $myvar{read_only} eq 'OFF' ) {
             badprint "This replication slave "
               . "is running with the read_only option disabled.";
         }
@@ -1503,12 +1503,12 @@ my ( $mysqlvermajor, $mysqlverminor, $mysqlvermicro );
 
 sub validate_mysql_version {
     ( $mysqlvermajor, $mysqlverminor, $mysqlvermicro ) =
-      $myvar{'version'} =~ /^(\d+)(?:\.(\d+)|)(?:\.(\d+)|)/;
+      $myvar{version} =~ /^(\d+)(?:\.(\d+)|)(?:\.(\d+)|)/;
     $mysqlverminor ||= 0;
     $mysqlvermicro ||= 0;
     if ( !mysql_version_ge( 5, 1 ) ) {
         badprint "Your MySQL version "
-          . "$myvar{'version'} is EOL software!  Upgrade soon!";
+          . "$myvar{version} is EOL software!  Upgrade soon!";
         return;
     }
 
@@ -1516,11 +1516,11 @@ sub validate_mysql_version {
         or mysql_version_ge(12) )
     {
         badprint "Currently running unsupported MySQL version "
-          . $myvar{'version'};
+          . $myvar{version};
         return;
     }
 
-    goodprint "Currently running supported MySQL version $myvar{'version'}";
+    goodprint "Currently running supported MySQL version $myvar{version}";
     return;
 }
 
@@ -1559,7 +1559,7 @@ sub check_architecture {
     return if $doremote eq 1;
     $arch = _check_architecture() || 64;
     goodprint "Operating on 64-bit architecture" if $arch == 64;
-    $result{'OS'}{'Architecture'} = "$arch bits";
+    $result{OS}{Architecture} = "$arch bits";
 
 }
 
@@ -1606,7 +1606,7 @@ sub check_storage_engines {
         for my $line (@engineresults) {
             my ( $engine, $engineenabled );
             ( $engine, $engineenabled ) = $line =~ /([a-zA-Z_]*)\s+([a-zA-Z]+)/;
-            $result{'Engine'}{$engine}{'Enabled'} = $engineenabled;
+            $result{Engine}{$engine}{Enabled} = $engineenabled;
             $engines .=
               ( $engineenabled eq "YES" || $engineenabled eq "DEFAULT" )
               ? greenwrap "+" . $engine . " "
@@ -1619,7 +1619,7 @@ sub check_storage_engines {
         for my $line (@engineresults) {
             my ( $engine, $engineenabled );
             ( $engine, $engineenabled ) = $line =~ /([a-zA-Z_]*)\s+([a-zA-Z]+)/;
-            $result{'Engine'}{$engine}{'Enabled'} = $engineenabled;
+            $result{Engine}{$engine}{Enabled} = $engineenabled;
             $engines .=
               ( $engineenabled eq "YES" || $engineenabled eq "DEFAULT" )
               ? greenwrap "+" . $engine . " "
@@ -1628,36 +1628,36 @@ sub check_storage_engines {
     }
     else {
         $engines .=
-          ( defined $myvar{'have_archive'} && $myvar{'have_archive'} eq "YES" )
+          ( defined $myvar{have_archive} && $myvar{have_archive} eq "YES" )
           ? greenwrap "+Archive "
           : redwrap "-Archive ";
         $engines .=
-          ( defined $myvar{'have_bdb'} && $myvar{'have_bdb'} eq "YES" )
+          ( defined $myvar{have_bdb} && $myvar{have_bdb} eq "YES" )
           ? greenwrap "+BDB "
           : redwrap "-BDB ";
         $engines .=
-          ( defined $myvar{'have_federated_engine'}
-              && $myvar{'have_federated_engine'} eq "YES" )
+          ( defined $myvar{have_federated_engine}
+              && $myvar{have_federated_engine} eq "YES" )
           ? greenwrap "+Federated "
           : redwrap "-Federated ";
         $engines .=
-          ( defined $myvar{'have_innodb'} && $myvar{'have_innodb'} eq "YES" )
+          ( defined $myvar{have_innodb} && $myvar{have_innodb} eq "YES" )
           ? greenwrap "+InnoDB "
           : redwrap "-InnoDB ";
         $engines .=
-          ( defined $myvar{'have_isam'} && $myvar{'have_isam'} eq "YES" )
+          ( defined $myvar{have_isam} && $myvar{have_isam} eq "YES" )
           ? greenwrap "+ISAM "
           : redwrap "-ISAM ";
         $engines .=
-          ( defined $myvar{'have_ndbcluster'}
-              && $myvar{'have_ndbcluster'} eq "YES" )
+          ( defined $myvar{have_ndbcluster}
+              && $myvar{have_ndbcluster} eq "YES" )
           ? greenwrap "+NDBCluster "
           : redwrap "-NDBCluster ";
     }
 
     my @dblist = grep { $_ ne 'lost+found' } select_array "SHOW DATABASES";
 
-    $result{'Databases'}{'List'} = [@dblist];
+    $result{Databases}{List} = [@dblist];
     infoprint "Status: $engines";
     if ( mysql_version_ge( 5, 1, 5 ) ) {
 
@@ -1673,22 +1673,22 @@ sub check_storage_engines {
             $isize = 0 unless defined($isize);
             $dsize = 0 unless defined($dsize);
             $count = 0 unless defined($count);
-            $enginestats{$engine}                      = $size;
-            $enginecount{$engine}                      = $count;
-            $result{'Engine'}{$engine}{'Table Number'} = $count;
-            $result{'Engine'}{$engine}{'Total Size'}   = $size;
-            $result{'Engine'}{$engine}{'Data Size'}    = $dsize;
-            $result{'Engine'}{$engine}{'Index Size'}   = $isize;
+            $enginestats{$engine}                    = $size;
+            $enginecount{$engine}                    = $count;
+            $result{Engine}{$engine}{'Table Number'} = $count;
+            $result{Engine}{$engine}{'Total Size'}   = $size;
+            $result{Engine}{$engine}{'Data Size'}    = $dsize;
+            $result{Engine}{$engine}{'Index Size'}   = $isize;
         }
         my $not_innodb = '';
-        if ( $result{'Variables'}{'innodb_file_per_table'} eq 'OFF' ) {
+        if ( $result{Variables}{innodb_file_per_table} eq 'OFF' ) {
             $not_innodb = "AND NOT ENGINE='InnoDB'";
         }
-        $result{'Tables'}{'Fragmented tables'} =
+        $result{Tables}{'Fragmented tables'} =
           [select_array
 "SELECT CONCAT(CONCAT(TABLE_SCHEMA, '.'), TABLE_NAME),DATA_FREE FROM information_schema.TABLES WHERE TABLE_SCHEMA NOT IN ('information_schema','performance_schema', 'mysql') AND DATA_LENGTH/1024/1024>100 AND DATA_FREE*100/(DATA_LENGTH+INDEX_LENGTH+DATA_FREE) > 10 AND NOT ENGINE='MEMORY' $not_innodb"
           ];
-        $fragtables = scalar @{ $result{'Tables'}{'Fragmented tables'} };
+        $fragtables = scalar @{ $result{Tables}{'Fragmented tables'} };
 
     }
     else {
@@ -1747,25 +1747,25 @@ sub check_storage_engines {
     }
 
     # If the storage engine isn't being used, recommend it to be disabled
-    if (  !defined $enginestats{'InnoDB'}
-        && defined $myvar{'have_innodb'}
-        && $myvar{'have_innodb'} eq "YES" )
+    if (  !defined $enginestats{InnoDB}
+        && defined $myvar{have_innodb}
+        && $myvar{have_innodb} eq "YES" )
     {
         badprint "InnoDB is enabled but isn't being used";
         push @generalrec,
           "Add skip-innodb to MySQL configuration to disable InnoDB";
     }
-    if (  !defined $enginestats{'BerkeleyDB'}
-        && defined $myvar{'have_bdb'}
-        && $myvar{'have_bdb'} eq "YES" )
+    if (  !defined $enginestats{BerkeleyDB}
+        && defined $myvar{have_bdb}
+        && $myvar{have_bdb} eq "YES" )
     {
         badprint "BDB is enabled but isn't being used";
         push @generalrec,
           "Add skip-bdb to MySQL configuration to disable BDB";
     }
-    if (  !defined $enginestats{'ISAM'}
-        && defined $myvar{'have_isam'}
-        && $myvar{'have_isam'} eq "YES" )
+    if (  !defined $enginestats{ISAM}
+        && defined $myvar{have_isam}
+        && $myvar{have_isam} eq "YES" )
     {
         badprint "MYISAM is enabled but isn't being used";
         push @generalrec,
@@ -1778,7 +1778,7 @@ sub check_storage_engines {
         push @generalrec,
           "Run OPTIMIZE TABLE to defragment tables for better performance";
         my $total_free = 0;
-        for my $table_line ( @{ $result{'Tables'}{'Fragmented tables'} } ) {
+        for my $table_line ( @{ $result{Tables}{'Fragmented tables'} } ) {
             my ( $table_name, $data_free ) = split( /\s+/, $table_line );
             $data_free = $data_free / 1024 / 1024;
             $total_free += $data_free;
@@ -1797,7 +1797,7 @@ sub check_storage_engines {
 
     # Find the maximum integer
     my $maxint = select_one "SELECT ~0";
-    $result{'MaxInt'} = $maxint;
+    $result{MaxInt} = $maxint;
 
     # Now we use a database list, and loop through it to get storage engine stats for tables
     for my $db (@dblist) {
@@ -1827,7 +1827,7 @@ sub check_storage_engines {
 
             if ( $autoincrement =~ /^\d+?$/ ) {
                 my $percent = percentage( $autoincrement, $maxint );
-                $result{'PctAutoIncrement'}{"$db.$name"} = $percent;
+                $result{PctAutoIncrement}{"$db.$name"} = $percent;
                 if ( $percent >= 75 ) {
                     badprint
 "Table '$db.$name' has an autoincrement value near max capacity ($percent%)";
@@ -1841,299 +1841,292 @@ sub check_storage_engines {
 my %mycalc;
 
 sub calculations {
-    if ( $mystat{'Questions'} < 1 ) {
+    if ( $mystat{Questions} < 1 ) {
         badprint
           "Your server has not answered any queries - cannot continue...";
         exit 2;
     }
 
     # Per-thread memory
-    $mycalc{'per_thread_buffers'} =
-      ( $myvar{'thread_stack'} + $myvar{'join_buffer_size'} ) + (
+    $mycalc{per_thread_buffers} =
+      ( $myvar{thread_stack} + $myvar{join_buffer_size} ) + (
         mysql_version_ge(4)
-        ? $myvar{'read_buffer_size'} + $myvar{'read_rnd_buffer_size'} +
-          $myvar{'sort_buffer_size'}
-        : $myvar{'record_buffer'} +
-          $myvar{'record_rnd_buffer'} +
-          $myvar{'sort_buffer'} );
+        ? $myvar{read_buffer_size} + $myvar{read_rnd_buffer_size} +
+          $myvar{sort_buffer_size}
+        : $myvar{record_buffer} +
+          $myvar{record_rnd_buffer} +
+          $myvar{sort_buffer} );
 
-    $mycalc{'total_per_thread_buffers'} =
-      $mycalc{'per_thread_buffers'} * $myvar{'max_connections'};
-    $mycalc{'max_total_per_thread_buffers'} =
-      $mycalc{'per_thread_buffers'} * $mystat{'Max_used_connections'};
+    $mycalc{total_per_thread_buffers} =
+      $mycalc{per_thread_buffers} * $myvar{max_connections};
+    $mycalc{max_total_per_thread_buffers} =
+      $mycalc{per_thread_buffers} * $mystat{Max_used_connections};
 
     # Server-wide memory
-    $mycalc{'max_tmp_table_size'} =
-      ( $myvar{'tmp_table_size'} > $myvar{'max_heap_table_size'} )
-      ? $myvar{'max_heap_table_size'}
-      : $myvar{'tmp_table_size'};
-    $mycalc{'server_buffers'} =
-      $myvar{'key_buffer_size'} + $mycalc{'max_tmp_table_size'};
-    $mycalc{'server_buffers'} +=
-      ( defined $myvar{'innodb_buffer_pool_size'} )
-      ? $myvar{'innodb_buffer_pool_size'}
+    $mycalc{max_tmp_table_size} =
+      ( $myvar{tmp_table_size} > $myvar{max_heap_table_size} )
+      ? $myvar{max_heap_table_size}
+      : $myvar{tmp_table_size};
+    $mycalc{server_buffers} =
+      $myvar{key_buffer_size} + $mycalc{max_tmp_table_size};
+    $mycalc{server_buffers} +=
+      ( defined $myvar{innodb_buffer_pool_size} )
+      ? $myvar{innodb_buffer_pool_size}
       : 0;
-    $mycalc{'server_buffers'} +=
-      ( defined $myvar{'innodb_additional_mem_pool_size'} )
-      ? $myvar{'innodb_additional_mem_pool_size'}
+    $mycalc{server_buffers} +=
+      ( defined $myvar{innodb_additional_mem_pool_size} )
+      ? $myvar{innodb_additional_mem_pool_size}
       : 0;
-    $mycalc{'server_buffers'} +=
-      ( defined $myvar{'innodb_log_buffer_size'} )
-      ? $myvar{'innodb_log_buffer_size'}
+    $mycalc{server_buffers} +=
+      ( defined $myvar{innodb_log_buffer_size} )
+      ? $myvar{innodb_log_buffer_size}
       : 0;
-    $mycalc{'server_buffers'} +=
-      ( defined $myvar{'query_cache_size'} )
-      ? $myvar{'query_cache_size'}
+    $mycalc{server_buffers} +=
+      ( defined $myvar{query_cache_size} )
+      ? $myvar{query_cache_size}
       : 0;
-    $mycalc{'server_buffers'} +=
-      ( defined $myvar{'aria_pagecache_buffer_size'} )
-      ? $myvar{'aria_pagecache_buffer_size'}
+    $mycalc{server_buffers} +=
+      ( defined $myvar{aria_pagecache_buffer_size} )
+      ? $myvar{aria_pagecache_buffer_size}
       : 0;
 
     # Global memory
     # Max used memory is memory used by MySQL based on Max_used_connections
     # This is the max memory used theorically calculated with the max concurrent connection number reached by mysql
-    $mycalc{'max_used_memory'} =
-      $mycalc{'server_buffers'} +
-      $mycalc{"max_total_per_thread_buffers"} +
+    $mycalc{max_used_memory} =
+      $mycalc{server_buffers} +
+      $mycalc{max_total_per_thread_buffers} +
       get_pf_memory() +
       get_gcache_memory();
-    $mycalc{'pct_max_used_memory'} =
-      percentage( $mycalc{'max_used_memory'}, $physical_memory );
+    $mycalc{pct_max_used_memory} =
+      percentage( $mycalc{max_used_memory}, $physical_memory );
 
     # Total possible memory is memory needed by MySQL based on max_connections
     # This is the max memory MySQL can theorically used if all connections allowed has opened by mysql
-    $mycalc{'max_peak_memory'} =
-      $mycalc{'server_buffers'} +
-      $mycalc{'total_per_thread_buffers'} +
+    $mycalc{max_peak_memory} =
+      $mycalc{server_buffers} +
+      $mycalc{total_per_thread_buffers} +
       get_pf_memory() +
       get_gcache_memory();
-    $mycalc{'pct_max_physical_memory'} =
-      percentage( $mycalc{'max_peak_memory'}, $physical_memory );
+    $mycalc{pct_max_physical_memory} =
+      percentage( $mycalc{max_peak_memory}, $physical_memory );
 
-    debugprint "Max Used Memory: "
-      . hr_bytes( $mycalc{'max_used_memory'} ) . "";
-    debugprint "Max Used Percentage RAM: "
-      . $mycalc{'pct_max_used_memory'} . "%";
+    debugprint "Max Used Memory: " . hr_bytes( $mycalc{max_used_memory} ) . "";
+    debugprint "Max Used Percentage RAM: $mycalc{pct_max_used_memory}%";
 
-    debugprint "Max Peak Memory: "
-      . hr_bytes( $mycalc{'max_peak_memory'} ) . "";
+    debugprint "Max Peak Memory: " . hr_bytes( $mycalc{max_peak_memory} ) . "";
     debugprint "Max Peak Percentage RAM: "
-      . $mycalc{'pct_max_physical_memory'} . "%";
+      . $mycalc{pct_max_physical_memory} . "%";
 
     # Slow queries
-    $mycalc{'pct_slow_queries'} =
-      int( ( $mystat{'Slow_queries'} / $mystat{'Questions'} ) * 100 );
+    $mycalc{pct_slow_queries} =
+      int( ( $mystat{Slow_queries} / $mystat{Questions} ) * 100 );
 
     # Connections
-    $mycalc{'pct_connections_used'} = int(
-        ( $mystat{'Max_used_connections'} / $myvar{'max_connections'} ) * 100 );
-    $mycalc{'pct_connections_used'} =
-      ( $mycalc{'pct_connections_used'} > 100 )
+    $mycalc{pct_connections_used} =
+      int( ( $mystat{Max_used_connections} / $myvar{max_connections} ) * 100 );
+    $mycalc{pct_connections_used} =
+      ( $mycalc{pct_connections_used} > 100 )
       ? 100
-      : $mycalc{'pct_connections_used'};
+      : $mycalc{pct_connections_used};
 
     # Aborted Connections
-    $mycalc{'pct_connections_aborted'} =
-      percentage( $mystat{'Aborted_connects'}, $mystat{'Connections'} );
-    debugprint "Aborted_connects: " . $mystat{'Aborted_connects'} . "";
-    debugprint "Connections: " . $mystat{'Connections'} . "";
+    $mycalc{pct_connections_aborted} =
+      percentage( $mystat{Aborted_connects}, $mystat{Connections} );
+    debugprint "Aborted_connects: " . $mystat{Aborted_connects} . "";
+    debugprint "Connections: " . $mystat{Connections} . "";
     debugprint "pct_connections_aborted: "
-      . $mycalc{'pct_connections_aborted'} . "";
+      . $mycalc{pct_connections_aborted} . "";
 
     # Key buffers
-    $mycalc{'pct_key_buffer_used'} =
-      mysql_version_ge( 4, 1 ) && $myvar{'key_buffer_size'} > 0
+    $mycalc{pct_key_buffer_used} =
+      mysql_version_ge( 4, 1 ) && $myvar{key_buffer_size} > 0
       ? sprintf(
         "%.1f",
         (   1 - (
-                (   $mystat{'Key_blocks_unused'} *
-                      $myvar{'key_cache_block_size'}
-                ) / $myvar{'key_buffer_size'} ) ) * 100 )
+                ( $mystat{Key_blocks_unused} * $myvar{key_cache_block_size} ) /
+                  $myvar{key_buffer_size} ) ) * 100 )
       : 0;
 
-    $mycalc{'pct_keys_from_mem'} = $mystat{'Key_read_requests'} > 0
+    $mycalc{pct_keys_from_mem} = $mystat{Key_read_requests} > 0
+      ? sprintf(
+        "%.1f",
+        ( 100 - ( ( $mystat{Key_reads} / $mystat{Key_read_requests} ) * 100 ) )
+      )
+      : 0;
+
+    $mycalc{pct_aria_keys_from_mem} =
+      defined $mystat{Aria_pagecache_read_requests}
+      && $mystat{Aria_pagecache_read_requests} > 0
+      ? sprintf(
+        "%.1f",
+        (   100 - (
+                (   $mystat{Aria_pagecache_reads} /
+                      $mystat{Aria_pagecache_read_requests} ) * 100 ) ) )
+      : 0;
+
+    $mycalc{pct_wkeys_from_mem} = $mystat{Key_write_requests} > 0
       ? sprintf(
         "%.1f",
         (   100 -
-              ( ( $mystat{'Key_reads'} / $mystat{'Key_read_requests'} ) * 100 )
-        ) )
-      : 0;
-
-    $mycalc{'pct_aria_keys_from_mem'} =
-      defined $mystat{'Aria_pagecache_read_requests'}
-      && $mystat{'Aria_pagecache_read_requests'} > 0
-      ? sprintf(
-        "%.1f",
-        (   100 - (
-                (   $mystat{'Aria_pagecache_reads'} /
-                      $mystat{'Aria_pagecache_read_requests'} ) * 100 ) ) )
-      : 0;
-
-    $mycalc{'pct_wkeys_from_mem'} = $mystat{'Key_write_requests'} > 0
-      ? sprintf(
-        "%.1f",
-        (   100 - (
-                ( $mystat{'Key_writes'} / $mystat{'Key_write_requests'} ) * 100
-            ) ) )
+              ( ( $mystat{Key_writes} / $mystat{Key_write_requests} ) * 100 ) )
+      )
       : 0;
 
     if ( $doremote eq 0 and !mysql_version_ge(5) ) {
         my $size = 0;
         $size += (split)[0]
           for
-`find $myvar{'datadir'} -name "*.MYI" 2>&1 | xargs du -L $duflags 2>&1`;
-        $mycalc{'total_myisam_indexes'} = $size;
-        $mycalc{'total_aria_indexes'}   = 0;
+          `find $myvar{datadir} -name "*.MYI" 2>&1 | xargs du -L $duflags 2>&1`;
+        $mycalc{total_myisam_indexes} = $size;
+        $mycalc{total_aria_indexes}   = 0;
     }
     elsif ( mysql_version_ge(5) ) {
-        $mycalc{'total_myisam_indexes'} = select_one
+        $mycalc{total_myisam_indexes} = select_one
 "SELECT IFNULL(SUM(INDEX_LENGTH),0) FROM information_schema.TABLES WHERE TABLE_SCHEMA NOT IN ('information_schema') AND ENGINE = 'MyISAM';";
-        $mycalc{'total_aria_indexes'} = select_one
+        $mycalc{total_aria_indexes} = select_one
 "SELECT IFNULL(SUM(INDEX_LENGTH),0) FROM information_schema.TABLES WHERE TABLE_SCHEMA NOT IN ('information_schema') AND ENGINE = 'Aria';";
     }
 
-    $mycalc{'total_myisam_indexes'} if defined $mycalc{'total_myisam_indexes'};
-    $mycalc{'total_myisam_indexes'} ||= "fail";
+    $mycalc{total_myisam_indexes} if defined $mycalc{total_myisam_indexes};
+    $mycalc{total_myisam_indexes} ||= "fail";
 
-    $mycalc{'total_aria_indexes'} if defined $mycalc{'total_aria_indexes'};
-    $mycalc{'total_aria_indexes'} ||= 1;
+    $mycalc{total_aria_indexes} if defined $mycalc{total_aria_indexes};
+    $mycalc{total_aria_indexes} ||= 1;
 
     # Query cache
     if ( mysql_version_ge(4) ) {
-        $mycalc{'query_cache_efficiency'} = sprintf "%.1f",
-          ( $mystat{'Qcache_hits'} /
-              ( $mystat{'Com_select'} + $mystat{'Qcache_hits'} ) ) * 100;
-        $mycalc{'pct_query_cache_used'} = sprintf "%.1f",
+        $mycalc{query_cache_efficiency} = sprintf "%.1f",
+          ( $mystat{Qcache_hits} /
+              ( $mystat{Com_select} + $mystat{Qcache_hits} ) ) * 100;
+        $mycalc{pct_query_cache_used} = sprintf "%.1f",
           100 -
-          ( $mystat{'Qcache_free_memory'} / $myvar{'query_cache_size'} ) * 100
-          if $myvar{'query_cache_size'};
-        $mycalc{'query_cache_prunes_per_day'} =
-          $mystat{'Qcache_lowmem_prunes'} == 0
+          ( $mystat{Qcache_free_memory} / $myvar{query_cache_size} ) * 100
+          if $myvar{query_cache_size};
+        $mycalc{query_cache_prunes_per_day} =
+          $mystat{Qcache_lowmem_prunes} == 0
           ? 0
-          : int(
-            $mystat{'Qcache_lowmem_prunes'} / ( $mystat{'Uptime'} / 86400 ) );
+          : int( $mystat{Qcache_lowmem_prunes} / ( $mystat{Uptime} / 86400 ) );
     }
 
     # Sorting
-    $mycalc{'total_sorts'} = $mystat{'Sort_scan'} + $mystat{'Sort_range'};
-    if ( $mycalc{'total_sorts'} > 0 ) {
-        $mycalc{'pct_temp_sort_table'} = int(
-            ( $mystat{'Sort_merge_passes'} / $mycalc{'total_sorts'} ) * 100 );
+    $mycalc{total_sorts} = $mystat{Sort_scan} + $mystat{Sort_range};
+    if ( $mycalc{total_sorts} > 0 ) {
+        $mycalc{pct_temp_sort_table} =
+          int( ( $mystat{Sort_merge_passes} / $mycalc{total_sorts} ) * 100 );
     }
 
     # Joins
-    $mycalc{'joins_without_indexes'} =
-      $mystat{'Select_range_check'} + $mystat{'Select_full_join'};
-    $mycalc{'joins_without_indexes_per_day'} =
-      int( $mycalc{'joins_without_indexes'} / ( $mystat{'Uptime'} / 86400 ) );
+    $mycalc{joins_without_indexes} =
+      $mystat{Select_range_check} + $mystat{Select_full_join};
+    $mycalc{joins_without_indexes_per_day} =
+      int( $mycalc{joins_without_indexes} / ( $mystat{Uptime} / 86400 ) );
 
     # Temporary tables
-    if ( $mystat{'Created_tmp_tables'} > 0 ) {
-        $mycalc{'pct_temp_disk'} =
-          $mystat{'Created_tmp_disk_tables'} > 0
+    if ( $mystat{Created_tmp_tables} > 0 ) {
+        $mycalc{pct_temp_disk} =
+          $mystat{Created_tmp_disk_tables} > 0
           ? int(
-            (   $mystat{'Created_tmp_disk_tables'} /
-                  $mystat{'Created_tmp_tables'} ) * 100 )
+            ( $mystat{Created_tmp_disk_tables} / $mystat{Created_tmp_tables} )
+            * 100 )
           : 0;
     }
 
     # Table cache
-    $mycalc{'table_cache_hit_rate'} =
-      $mystat{'Opened_tables'} > 0
-      ? int( $mystat{'Open_tables'} * 100 / $mystat{'Opened_tables'} )
+    $mycalc{table_cache_hit_rate} =
+      $mystat{Opened_tables} > 0
+      ? int( $mystat{Open_tables} * 100 / $mystat{Opened_tables} )
       : 100;
 
     # Open files
-    if ( $myvar{'open_files_limit'} > 0 ) {
-        $mycalc{'pct_files_open'} =
-          int( $mystat{'Open_files'} * 100 / $myvar{'open_files_limit'} );
+    if ( $myvar{open_files_limit} > 0 ) {
+        $mycalc{pct_files_open} =
+          int( $mystat{Open_files} * 100 / $myvar{open_files_limit} );
     }
 
     # Table locks
-    if ( $mystat{'Table_locks_immediate'} > 0 ) {
-        $mycalc{'pct_table_locks_immediate'} =
-          $mystat{'Table_locks_waited'} == 0
+    if ( $mystat{Table_locks_immediate} > 0 ) {
+        $mycalc{pct_table_locks_immediate} =
+          $mystat{Table_locks_waited} == 0
           ? 100
-          : int(
-            $mystat{'Table_locks_immediate'} * 100 / (
-                $mystat{'Table_locks_waited'} + $mystat{'Table_locks_immediate'}
-            ) );
+          : int( $mystat{Table_locks_immediate} * 100 /
+              ( $mystat{Table_locks_waited} + $mystat{Table_locks_immediate} )
+          );
     }
 
     # Thread cache
-    $mycalc{'thread_cache_hit_rate'} = int( 100 -
-          ( ( $mystat{'Threads_created'} / $mystat{'Connections'} ) * 100 ) );
+    $mycalc{thread_cache_hit_rate} = int(
+        100 - ( ( $mystat{Threads_created} / $mystat{Connections} ) * 100 ) );
 
     # Other
-    if ( $mystat{'Connections'} > 0 ) {
-        $mycalc{'pct_aborted_connections'} =
-          int( ( $mystat{'Aborted_connects'} / $mystat{'Connections'} ) * 100 );
+    if ( $mystat{Connections} > 0 ) {
+        $mycalc{pct_aborted_connections} =
+          int( ( $mystat{Aborted_connects} / $mystat{Connections} ) * 100 );
     }
 
-    if ( $mystat{'Questions'} > 0 ) {
-        $mycalc{'total_reads'} = $mystat{'Com_select'};
-        $mycalc{'total_writes'} =
-          $mystat{'Com_delete'} +
-          $mystat{'Com_insert'} +
-          $mystat{'Com_update'} +
-          $mystat{'Com_replace'};
-        ( $mycalc{'pct_reads'}, $mycalc{'pct_writes'} ) =
-          $mycalc{'total_reads'} == 0 ? ( 0, 100 ) : do {
+    if ( $mystat{Questions} > 0 ) {
+        $mycalc{total_reads} = $mystat{Com_select};
+        $mycalc{total_writes} =
+          $mystat{Com_delete} +
+          $mystat{Com_insert} +
+          $mystat{Com_update} +
+          $mystat{Com_replace};
+        ( $mycalc{pct_reads}, $mycalc{pct_writes} ) =
+          $mycalc{total_reads} == 0 ? ( 0, 100 ) : do {
             my $reads = int(
-                (   $mycalc{'total_reads'} /
-                      ( $mycalc{'total_reads'} + $mycalc{'total_writes'} )
-                ) * 100 );
+                (   $mycalc{total_reads} /
+                      ( $mycalc{total_reads} + $mycalc{total_writes} ) ) * 100
+            );
             ( $reads, 100 - $reads );
           };
     }
 
     # InnoDB
-    if ( $myvar{'have_innodb'} eq "YES" ) {
-        $mycalc{'innodb_log_size_pct'} =
-          ( $myvar{'innodb_log_file_size'} * 100 /
-              $myvar{'innodb_buffer_pool_size'} );
+    if ( $myvar{have_innodb} eq "YES" ) {
+        $mycalc{innodb_log_size_pct} =
+          ( $myvar{innodb_log_file_size} * 100 /
+              $myvar{innodb_buffer_pool_size} );
     }
 
     # InnoDB Buffer pool read cache effiency
-    (   $mystat{'Innodb_buffer_pool_read_requests'},
-        $mystat{'Innodb_buffer_pool_reads'} )
+    (   $mystat{Innodb_buffer_pool_read_requests},
+        $mystat{Innodb_buffer_pool_reads} )
       = ( 1, 1 )
-      unless defined $mystat{'Innodb_buffer_pool_reads'};
-    $mycalc{'pct_read_efficiency'} = percentage(
-        (   $mystat{'Innodb_buffer_pool_read_requests'} -
-              $mystat{'Innodb_buffer_pool_reads'} ),
-        $mystat{'Innodb_buffer_pool_read_requests'} )
-      if defined $mystat{'Innodb_buffer_pool_read_requests'};
-    debugprint "pct_read_efficiency: " . $mycalc{'pct_read_efficiency'} . "";
+      unless defined $mystat{Innodb_buffer_pool_reads};
+    $mycalc{pct_read_efficiency} = percentage(
+        (   $mystat{Innodb_buffer_pool_read_requests} -
+              $mystat{Innodb_buffer_pool_reads} ),
+        $mystat{Innodb_buffer_pool_read_requests} )
+      if defined $mystat{Innodb_buffer_pool_read_requests};
+    debugprint "pct_read_efficiency: " . $mycalc{pct_read_efficiency} . "";
     debugprint "Innodb_buffer_pool_reads: "
-      . $mystat{'Innodb_buffer_pool_reads'} . "";
+      . $mystat{Innodb_buffer_pool_reads} . "";
     debugprint "Innodb_buffer_pool_read_requests: "
-      . $mystat{'Innodb_buffer_pool_read_requests'} . "";
+      . $mystat{Innodb_buffer_pool_read_requests} . "";
 
     # InnoDB log write cache effiency
-    ( $mystat{'Innodb_log_write_requests'}, $mystat{'Innodb_log_writes'} ) =
+    ( $mystat{Innodb_log_write_requests}, $mystat{Innodb_log_writes} ) =
       ( 1, 1 )
-      unless defined $mystat{'Innodb_log_writes'};
-    $mycalc{'pct_write_efficiency'} = percentage(
-        ( $mystat{'Innodb_log_write_requests'} - $mystat{'Innodb_log_writes'} ),
-        $mystat{'Innodb_log_write_requests'} )
-      if defined $mystat{'Innodb_log_write_requests'};
-    debugprint "pct_write_efficiency: " . $mycalc{'pct_write_efficiency'} . "";
-    debugprint "Innodb_log_writes: " . $mystat{'Innodb_log_writes'} . "";
+      unless defined $mystat{Innodb_log_writes};
+    $mycalc{pct_write_efficiency} = percentage(
+        ( $mystat{Innodb_log_write_requests} - $mystat{Innodb_log_writes} ),
+        $mystat{Innodb_log_write_requests} )
+      if defined $mystat{Innodb_log_write_requests};
+    debugprint "pct_write_efficiency: " . $mycalc{pct_write_efficiency} . "";
+    debugprint "Innodb_log_writes: " . $mystat{Innodb_log_writes} . "";
     debugprint "Innodb_log_write_requests: "
-      . $mystat{'Innodb_log_write_requests'} . "";
-    $mycalc{'pct_innodb_buffer_used'} = percentage(
-        (   $mystat{'Innodb_buffer_pool_pages_total'} -
-              $mystat{'Innodb_buffer_pool_pages_free'} ),
-        $mystat{'Innodb_buffer_pool_pages_total'} )
-      if defined $mystat{'Innodb_buffer_pool_pages_total'};
+      . $mystat{Innodb_log_write_requests} . "";
+    $mycalc{pct_innodb_buffer_used} = percentage(
+        (   $mystat{Innodb_buffer_pool_pages_total} -
+              $mystat{Innodb_buffer_pool_pages_free} ),
+        $mystat{Innodb_buffer_pool_pages_total} )
+      if defined $mystat{Innodb_buffer_pool_pages_total};
 
     # Binlog Cache
-    if ( $myvar{'log_bin'} ne 'OFF' ) {
-        $mycalc{'pct_binlog_cache'} = percentage(
-            $mystat{'Binlog_cache_use'} - $mystat{'Binlog_cache_disk_use'},
-            $mystat{'Binlog_cache_use'} );
+    if ( $myvar{log_bin} ne 'OFF' ) {
+        $mycalc{pct_binlog_cache} = percentage(
+            $mystat{Binlog_cache_use} - $mystat{Binlog_cache_disk_use},
+            $mystat{Binlog_cache_use} );
     }
 }
 
@@ -2142,121 +2135,120 @@ sub mysql_stats {
 
     # Show uptime, queries per second, connections, traffic stats
     my $qps;
-    if ( $mystat{'Uptime'} > 0 ) {
+    if ( $mystat{Uptime} > 0 ) {
         $qps =
-          sprintf( "%.3f", $mystat{'Questions'} / $mystat{'Uptime'} );
+          sprintf( "%.3f", $mystat{Questions} / $mystat{Uptime} );
     }
     push @generalrec,
       "MySQL started within last 24 hours - recommendations may be inaccurate"
-      if ( $mystat{'Uptime'} < 86400 );
+      if ( $mystat{Uptime} < 86400 );
     infoprint "Up for: "
-      . pretty_uptime( $mystat{'Uptime'} ) . " ("
-      . hr_num( $mystat{'Questions'} ) . " q ["
+      . pretty_uptime( $mystat{Uptime} ) . " ("
+      . hr_num( $mystat{Questions} ) . " q ["
       . hr_num($qps)
       . " qps], "
-      . hr_num( $mystat{'Connections'} )
+      . hr_num( $mystat{Connections} )
       . " conn," . " TX: "
-      . hr_bytes_rnd( $mystat{'Bytes_sent'} )
+      . hr_bytes_rnd( $mystat{Bytes_sent} )
       . ", RX: "
-      . hr_bytes_rnd( $mystat{'Bytes_received'} ) . ")";
+      . hr_bytes_rnd( $mystat{Bytes_received} ) . ")";
     infoprint "Reads / Writes: "
-      . $mycalc{'pct_reads'} . "% / "
-      . $mycalc{'pct_writes'} . "%";
+      . $mycalc{pct_reads} . "% / "
+      . $mycalc{pct_writes} . "%";
 
     # Binlog Cache
-    infoprint $myvar{'log_bin'} eq 'OFF'
+    infoprint $myvar{log_bin} eq 'OFF'
       ? "Binary logging is disabled"
       : "Binary logging is enabled (GTID MODE: "
-      . ( defined $myvar{'gtid_mode'} ? $myvar{'gtid_mode'} : "OFF" ) . ")";
+      . ( defined $myvar{gtid_mode} ? $myvar{gtid_mode} : "OFF" ) . ")";
 
     # Memory usage
     infoprint "Physical Memory     : " . hr_bytes($physical_memory);
-    infoprint "Max MySQL memory    : " . hr_bytes( $mycalc{'max_peak_memory'} );
+    infoprint "Max MySQL memory    : " . hr_bytes( $mycalc{max_peak_memory} );
     infoprint "Other process memory: " . hr_bytes( get_other_process_memory() );
 
     infoprint "Total buffers: "
-      . hr_bytes( $mycalc{'server_buffers'} )
+      . hr_bytes( $mycalc{server_buffers} )
       . " global + "
-      . hr_bytes( $mycalc{'per_thread_buffers'} )
-      . " per thread ($myvar{'max_connections'} max threads)";
+      . hr_bytes( $mycalc{per_thread_buffers} )
+      . " per thread ($myvar{max_connections} max threads)";
     infoprint "P_S Max memory usage: " . hr_bytes_rnd( get_pf_memory() );
     infoprint "Galera GCache Max memory usage: "
       . hr_bytes_rnd( get_gcache_memory() );
     if ( $opt{buffers} ne 0 ) {
         infoprint "Global Buffers";
         infoprint " +-- Key Buffer: "
-          . hr_bytes( $myvar{'key_buffer_size'} ) . "";
+          . hr_bytes( $myvar{key_buffer_size} ) . "";
         infoprint " +-- Max Tmp Table: "
-          . hr_bytes( $mycalc{'max_tmp_table_size'} ) . "";
+          . hr_bytes( $mycalc{max_tmp_table_size} ) . "";
 
-        if ( defined $myvar{'query_cache_type'} ) {
+        if ( defined $myvar{query_cache_type} ) {
             infoprint "Query Cache Buffers";
             infoprint " +-- Query Cache: "
-              . $myvar{'query_cache_type'} . " - "
+              . $myvar{query_cache_type} . " - "
               . (
-                $myvar{'query_cache_type'} eq 0 |
-                  $myvar{'query_cache_type'} eq 'OFF' ? "DISABLED"
-                : ( $myvar{'query_cache_type'} eq 1 ? "ALL REQUESTS"
+                $myvar{query_cache_type} eq 0 |
+                  $myvar{query_cache_type} eq 'OFF' ? "DISABLED"
+                : ( $myvar{query_cache_type} eq 1 ? "ALL REQUESTS"
                     : "ON DEMAND" ) )
               . "";
             infoprint " +-- Query Cache Size: "
-              . hr_bytes( $myvar{'query_cache_size'} ) . "";
+              . hr_bytes( $myvar{query_cache_size} ) . "";
         }
 
         infoprint "Per Thread Buffers";
         infoprint " +-- Read Buffer: "
-          . hr_bytes( $myvar{'read_buffer_size'} ) . "";
+          . hr_bytes( $myvar{read_buffer_size} ) . "";
         infoprint " +-- Read RND Buffer: "
-          . hr_bytes( $myvar{'read_rnd_buffer_size'} ) . "";
+          . hr_bytes( $myvar{read_rnd_buffer_size} ) . "";
         infoprint " +-- Sort Buffer: "
-          . hr_bytes( $myvar{'sort_buffer_size'} ) . "";
-        infoprint " +-- Thread stack: "
-          . hr_bytes( $myvar{'thread_stack'} ) . "";
+          . hr_bytes( $myvar{sort_buffer_size} ) . "";
+        infoprint " +-- Thread stack: " . hr_bytes( $myvar{thread_stack} ) . "";
         infoprint " +-- Join Buffer: "
-          . hr_bytes( $myvar{'join_buffer_size'} ) . "";
-        if ( $myvar{'log_bin'} ne 'OFF' ) {
+          . hr_bytes( $myvar{join_buffer_size} ) . "";
+        if ( $myvar{log_bin} ne 'OFF' ) {
             infoprint "Binlog Cache Buffers";
             infoprint " +-- Binlog Cache: "
-              . hr_bytes( $myvar{'binlog_cache_size'} ) . "";
+              . hr_bytes( $myvar{binlog_cache_size} ) . "";
         }
     }
 
     if (   $arch
         && $arch == 32
-        && $mycalc{'max_used_memory'} > 2 * 1024 * 1024 * 1024 )
+        && $mycalc{max_used_memory} > 2 * 1024 * 1024 * 1024 )
     {
         badprint
           "Allocating > 2GB RAM on 32-bit systems can cause system instability";
         badprint "Maximum reached memory usage: "
-          . hr_bytes( $mycalc{'max_used_memory'} )
-          . " ($mycalc{'pct_max_used_memory'}% of installed RAM)";
+          . hr_bytes( $mycalc{max_used_memory} )
+          . " ($mycalc{pct_max_used_memory}% of installed RAM)";
     }
-    elsif ( $mycalc{'pct_max_used_memory'} > 85 ) {
+    elsif ( $mycalc{pct_max_used_memory} > 85 ) {
         badprint "Maximum reached memory usage: "
-          . hr_bytes( $mycalc{'max_used_memory'} )
-          . " ($mycalc{'pct_max_used_memory'}% of installed RAM)";
+          . hr_bytes( $mycalc{max_used_memory} )
+          . " ($mycalc{pct_max_used_memory}% of installed RAM)";
     }
     else {
         goodprint "Maximum reached memory usage: "
-          . hr_bytes( $mycalc{'max_used_memory'} )
-          . " ($mycalc{'pct_max_used_memory'}% of installed RAM)";
+          . hr_bytes( $mycalc{max_used_memory} )
+          . " ($mycalc{pct_max_used_memory}% of installed RAM)";
     }
 
-    if ( $mycalc{'pct_max_physical_memory'} > 85 ) {
+    if ( $mycalc{pct_max_physical_memory} > 85 ) {
         badprint "Maximum possible memory usage: "
-          . hr_bytes( $mycalc{'max_peak_memory'} )
-          . " ($mycalc{'pct_max_physical_memory'}% of installed RAM)";
+          . hr_bytes( $mycalc{max_peak_memory} )
+          . " ($mycalc{pct_max_physical_memory}% of installed RAM)";
         push @generalrec,
           "Reduce your overall MySQL memory footprint for system stability";
     }
     else {
         goodprint "Maximum possible memory usage: "
-          . hr_bytes( $mycalc{'max_peak_memory'} )
-          . " ($mycalc{'pct_max_physical_memory'}% of installed RAM)";
+          . hr_bytes( $mycalc{max_peak_memory} )
+          . " ($mycalc{pct_max_physical_memory}% of installed RAM)";
     }
 
     if ( $physical_memory <
-        ( $mycalc{'max_peak_memory'} + get_other_process_memory() ) )
+        ( $mycalc{max_peak_memory} + get_other_process_memory() ) )
     {
         badprint
           "Overall possible memory usage with other process exceeded memory";
@@ -2270,58 +2262,58 @@ sub mysql_stats {
 
     # Slow queries
     my $slow_msg =
-        "Slow queries: $mycalc{'pct_slow_queries'}% ("
-      . hr_num( $mystat{'Slow_queries'} ) . "/"
-      . hr_num( $mystat{'Questions'} ) . ")";
-    if ( $mycalc{'pct_slow_queries'} > 5 ) {
+        "Slow queries: $mycalc{pct_slow_queries}% ("
+      . hr_num( $mystat{Slow_queries} ) . "/"
+      . hr_num( $mystat{Questions} ) . ")";
+    if ( $mycalc{pct_slow_queries} > 5 ) {
         badprint $slow_msg;
     }
     else {
         goodprint $slow_msg;
     }
 
-    if ( $myvar{'long_query_time'} > 10 ) {
+    if ( $myvar{long_query_time} > 10 ) {
         push @adjvars, "long_query_time (<= 10)";
     }
 
-    if ( defined $myvar{'log_slow_queries'}
-        and $myvar{'log_slow_queries'} eq "OFF" )
+    if ( defined $myvar{log_slow_queries}
+        and $myvar{log_slow_queries} eq "OFF" )
     {
         push @generalrec,
           "Enable the slow query log to troubleshoot bad queries";
     }
 
     # Connections
-    if ( $mycalc{'pct_connections_used'} > 85 ) {
+    if ( $mycalc{pct_connections_used} > 85 ) {
         badprint
-"Highest connection usage: $mycalc{'pct_connections_used'}%  ($mystat{'Max_used_connections'}/$myvar{'max_connections'})";
+"Highest connection usage: $mycalc{pct_connections_used}%  ($mystat{Max_used_connections}/$myvar{max_connections})";
         push @adjvars,
-          "max_connections (> $myvar{'max_connections'})",
-          "wait_timeout (< $myvar{'wait_timeout'})",
-          "interactive_timeout (< $myvar{'interactive_timeout'})";
+          "max_connections (> $myvar{max_connections})",
+          "wait_timeout (< $myvar{wait_timeout})",
+          "interactive_timeout (< $myvar{interactive_timeout})";
         push @generalrec,
           "Reduce or eliminate persistent connections "
           . "to reduce connection usage";
     }
     else {
         goodprint
-"Highest usage of available connections: $mycalc{'pct_connections_used'}% ($mystat{'Max_used_connections'}/$myvar{'max_connections'})";
+"Highest usage of available connections: $mycalc{pct_connections_used}% ($mystat{Max_used_connections}/$myvar{max_connections})";
     }
 
     # Aborted Connections
-    if ( $mycalc{'pct_connections_aborted'} > 3 ) {
+    if ( $mycalc{pct_connections_aborted} > 3 ) {
         badprint
-"Aborted connections: $mycalc{'pct_connections_aborted'}%  ($mystat{'Aborted_connects'}/$mystat{'Connections'})";
+"Aborted connections: $mycalc{pct_connections_aborted}%  ($mystat{Aborted_connects}/$mystat{Connections})";
         push @generalrec,
           "Reduce or eliminate unclosed connections and network issues";
     }
     else {
         goodprint
-"Aborted connections: $mycalc{'pct_connections_aborted'}%  ($mystat{'Aborted_connects'}/$mystat{'Connections'})";
+"Aborted connections: $mycalc{pct_connections_aborted}%  ($mystat{Aborted_connects}/$mystat{Connections})";
     }
 
     # name resolution
-    if ( $result{'Variables'}{'skip_name_resolve'} eq 'OFF' ) {
+    if ( $result{Variables}{skip_name_resolve} eq 'OFF' ) {
         badprint
 "name resolution is active : a reverse name resolution is made for each new connection and can reduce performance";
         push @generalrec,
@@ -2337,7 +2329,7 @@ sub mysql_stats {
           "Upgrade MySQL to version 4+ to utilize query caching";
     }
     elsif ( mysql_version_ge( 5, 5 ) and !mysql_version_ge( 10, 1 ) ) {
-        if ( $myvar{'query_cache_type'} ne "OFF" ) {
+        if ( $myvar{query_cache_type} ne "OFF" ) {
             badprint
               "Query cache may be disabled by default due to mutex contention.";
             push @adjvars, "query_cache_type (=0)";
@@ -2347,96 +2339,96 @@ sub mysql_stats {
 "Query cache is disabled by default due to mutex contention on multiprocessor machines.";
         }
     }
-    elsif ( $myvar{'query_cache_size'} < 1 ) {
+    elsif ( $myvar{query_cache_size} < 1 ) {
         badprint "Query cache is disabled";
         push @adjvars, "query_cache_size (>= 8M)";
     }
-    elsif ( $myvar{'query_cache_type'} eq "OFF" ) {
+    elsif ( $myvar{query_cache_type} eq "OFF" ) {
         badprint "Query cache is disabled";
         push @adjvars, "query_cache_type (=1)";
     }
-    elsif ( $mystat{'Com_select'} == 0 ) {
+    elsif ( $mystat{Com_select} == 0 ) {
         badprint
           "Query cache cannot be analyzed - no SELECT statements executed";
     }
     else {
-        if ( $mycalc{'query_cache_efficiency'} < 20 ) {
+        if ( $mycalc{query_cache_efficiency} < 20 ) {
             badprint
-              "Query cache efficiency: $mycalc{'query_cache_efficiency'}% ("
-              . hr_num( $mystat{'Qcache_hits'} )
+              "Query cache efficiency: $mycalc{query_cache_efficiency}% ("
+              . hr_num( $mystat{Qcache_hits} )
               . " cached / "
-              . hr_num( $mystat{'Qcache_hits'} + $mystat{'Com_select'} )
+              . hr_num( $mystat{Qcache_hits} + $mystat{Com_select} )
               . " selects)";
             push @adjvars,
               "query_cache_limit (> "
-              . hr_bytes_rnd( $myvar{'query_cache_limit'} )
+              . hr_bytes_rnd( $myvar{query_cache_limit} )
               . ", or use smaller result sets)";
         }
         else {
             goodprint
-              "Query cache efficiency: $mycalc{'query_cache_efficiency'}% ("
-              . hr_num( $mystat{'Qcache_hits'} )
+              "Query cache efficiency: $mycalc{query_cache_efficiency}% ("
+              . hr_num( $mystat{Qcache_hits} )
               . " cached / "
-              . hr_num( $mystat{'Qcache_hits'} + $mystat{'Com_select'} )
+              . hr_num( $mystat{Qcache_hits} + $mystat{Com_select} )
               . " selects)";
         }
-        if ( $mycalc{'query_cache_prunes_per_day'} > 98 ) {
+        if ( $mycalc{query_cache_prunes_per_day} > 98 ) {
             badprint
-"Query cache prunes per day: $mycalc{'query_cache_prunes_per_day'}";
-            if ( $myvar{'query_cache_size'} >= 128 * 1024 * 1024 ) {
+              "Query cache prunes per day: $mycalc{query_cache_prunes_per_day}";
+            if ( $myvar{query_cache_size} >= 128 * 1024 * 1024 ) {
                 push @generalrec,
                   "Increasing the query_cache size "
                   . "over 128M may reduce performance";
                 push @adjvars,
                   "query_cache_size (> "
-                  . hr_bytes_rnd( $myvar{'query_cache_size'} )
+                  . hr_bytes_rnd( $myvar{query_cache_size} )
                   . ") [see warning above]";
             }
             else {
                 push @adjvars,
                   "query_cache_size (> "
-                  . hr_bytes_rnd( $myvar{'query_cache_size'} ) . ")";
+                  . hr_bytes_rnd( $myvar{query_cache_size} ) . ")";
             }
         }
         else {
             goodprint
-"Query cache prunes per day: $mycalc{'query_cache_prunes_per_day'}";
+              "Query cache prunes per day: $mycalc{query_cache_prunes_per_day}";
         }
     }
 
     # Sorting
-    if ( $mycalc{'total_sorts'} == 0 ) {
+    if ( $mycalc{total_sorts} == 0 ) {
         goodprint "No Sort requiring temporary tables";
     }
-    elsif ( $mycalc{'pct_temp_sort_table'} > 10 ) {
+    elsif ( $mycalc{pct_temp_sort_table} > 10 ) {
         badprint
-          "Sorts requiring temporary tables: $mycalc{'pct_temp_sort_table'}% ("
-          . hr_num( $mystat{'Sort_merge_passes'} )
+          "Sorts requiring temporary tables: $mycalc{pct_temp_sort_table}% ("
+          . hr_num( $mystat{Sort_merge_passes} )
           . " temp sorts / "
-          . hr_num( $mycalc{'total_sorts'} )
+          . hr_num( $mycalc{total_sorts} )
           . " sorts)";
         push @adjvars,
           "sort_buffer_size (> "
-          . hr_bytes_rnd( $myvar{'sort_buffer_size'} ) . ")",
+          . hr_bytes_rnd( $myvar{sort_buffer_size} ) . ")",
           "read_rnd_buffer_size (> "
-          . hr_bytes_rnd( $myvar{'read_rnd_buffer_size'} ) . ")";
+          . hr_bytes_rnd( $myvar{read_rnd_buffer_size} ) . ")";
     }
     else {
         goodprint
-          "Sorts requiring temporary tables: $mycalc{'pct_temp_sort_table'}% ("
-          . hr_num( $mystat{'Sort_merge_passes'} )
+          "Sorts requiring temporary tables: $mycalc{pct_temp_sort_table}% ("
+          . hr_num( $mystat{Sort_merge_passes} )
           . " temp sorts / "
-          . hr_num( $mycalc{'total_sorts'} )
+          . hr_num( $mycalc{total_sorts} )
           . " sorts)";
     }
 
     # Joins
-    if ( $mycalc{'joins_without_indexes_per_day'} > 250 ) {
+    if ( $mycalc{joins_without_indexes_per_day} > 250 ) {
         badprint
-          "Joins performed without indexes: $mycalc{'joins_without_indexes'}";
+          "Joins performed without indexes: $mycalc{joins_without_indexes}";
         push @adjvars,
           "join_buffer_size (> "
-          . hr_bytes( $myvar{'join_buffer_size'} )
+          . hr_bytes( $myvar{join_buffer_size} )
           . ", or always use indexes with joins)";
         push @generalrec,
           "Adjust your join queries to always utilize indexes";
@@ -2447,34 +2439,34 @@ sub mysql_stats {
     }
 
     # Temporary tables
-    if ( $mystat{'Created_tmp_tables'} > 0 ) {
-        if (   $mycalc{'pct_temp_disk'} > 25
-            && $mycalc{'max_tmp_table_size'} < 256 * 1024 * 1024 )
+    if ( $mystat{Created_tmp_tables} > 0 ) {
+        if (   $mycalc{pct_temp_disk} > 25
+            && $mycalc{max_tmp_table_size} < 256 * 1024 * 1024 )
         {
             badprint
-              "Temporary tables created on disk: $mycalc{'pct_temp_disk'}% ("
-              . hr_num( $mystat{'Created_tmp_disk_tables'} )
+              "Temporary tables created on disk: $mycalc{pct_temp_disk}% ("
+              . hr_num( $mystat{Created_tmp_disk_tables} )
               . " on disk / "
-              . hr_num( $mystat{'Created_tmp_tables'} )
+              . hr_num( $mystat{Created_tmp_tables} )
               . " total)";
             push @adjvars,
               "tmp_table_size (> "
-              . hr_bytes_rnd( $myvar{'tmp_table_size'} ) . ")",
+              . hr_bytes_rnd( $myvar{tmp_table_size} ) . ")",
               "max_heap_table_size (> "
-              . hr_bytes_rnd( $myvar{'max_heap_table_size'} ) . ")";
+              . hr_bytes_rnd( $myvar{max_heap_table_size} ) . ")";
             push @generalrec,
               "When making adjustments, "
               . "make tmp_table_size/max_heap_table_size equal",
               "Reduce your SELECT DISTINCT queries which have no LIMIT clause";
         }
-        elsif ($mycalc{'pct_temp_disk'} > 25
-            && $mycalc{'max_tmp_table_size'} >= 256 * 1024 * 1024 )
+        elsif ($mycalc{pct_temp_disk} > 25
+            && $mycalc{max_tmp_table_size} >= 256 * 1024 * 1024 )
         {
             badprint
-              "Temporary tables created on disk: $mycalc{'pct_temp_disk'}% ("
-              . hr_num( $mystat{'Created_tmp_disk_tables'} )
+              "Temporary tables created on disk: $mycalc{pct_temp_disk}% ("
+              . hr_num( $mystat{Created_tmp_disk_tables} )
               . " on disk / "
-              . hr_num( $mystat{'Created_tmp_tables'} )
+              . hr_num( $mystat{Created_tmp_tables} )
               . " total)";
             push @generalrec,
               "Temporary table size is already large - reduce result set size",
@@ -2482,10 +2474,10 @@ sub mysql_stats {
         }
         else {
             goodprint
-              "Temporary tables created on disk: $mycalc{'pct_temp_disk'}% ("
-              . hr_num( $mystat{'Created_tmp_disk_tables'} )
+              "Temporary tables created on disk: $mycalc{pct_temp_disk}% ("
+              . hr_num( $mystat{Created_tmp_disk_tables} )
               . " on disk / "
-              . hr_num( $mystat{'Created_tmp_tables'} )
+              . hr_num( $mystat{Created_tmp_tables} )
               . " total)";
         }
     }
@@ -2494,38 +2486,38 @@ sub mysql_stats {
     }
 
     # Thread cache
-    #if ( $myvar{'thread_cache_size'} eq 0 ) {
+    #if ( $myvar{thread_cache_size} eq 0 ) {
     #    badprint "Thread cache is disabled";
     #    push( @generalrec, "Set thread_cache_size to 4 as a starting value" );
     #    push( @adjvars,    "thread_cache_size (start at 4)" );
     #} else {
-    #    if ( $mycalc{'thread_cache_hit_rate'} <= 50 ) {
+    #    if ( $mycalc{thread_cache_hit_rate} <= 50 ) {
     #       badprint
-    #          "Thread cache hit rate: $mycalc{'thread_cache_hit_rate'}% ("
-    #          . hr_num( $mystat{'Threads_created'} )
+    #          "Thread cache hit rate: $mycalc{thread_cache_hit_rate}% ("
+    #          . hr_num( $mystat{Threads_created} )
     #          . " created / "
-    #          . hr_num( $mystat{'Connections'} )
+    #          . hr_num( $mystat{Connections} )
     #          . " connections)";
     #        push( @adjvars,
-    #            "thread_cache_size (> $myvar{'thread_cache_size'})" );
+    #            "thread_cache_size (> $myvar{thread_cache_size})" );
     #    } else {
     #        goodprint
-    #          "Thread cache hit rate: $mycalc{'thread_cache_hit_rate'}% ("
-    #          . hr_num( $mystat{'Threads_created'} )
+    #          "Thread cache hit rate: $mycalc{thread_cache_hit_rate}% ("
+    #          . hr_num( $mystat{Threads_created} )
     #          . " created / "
-    #          . hr_num( $mystat{'Connections'} )
+    #          . hr_num( $mystat{Connections} )
     #          . " connections)";
     #    }
     #}
 
     # Table cache
     my $table_cache_var = "";
-    if ( $mystat{'Open_tables'} > 0 ) {
-        if ( $mycalc{'table_cache_hit_rate'} < 20 ) {
-            badprint "Table cache hit rate: $mycalc{'table_cache_hit_rate'}% ("
-              . hr_num( $mystat{'Open_tables'} )
+    if ( $mystat{Open_tables} > 0 ) {
+        if ( $mycalc{table_cache_hit_rate} < 20 ) {
+            badprint "Table cache hit rate: $mycalc{table_cache_hit_rate}% ("
+              . hr_num( $mystat{Open_tables} )
               . " open / "
-              . hr_num( $mystat{'Opened_tables'} )
+              . hr_num( $mystat{Opened_tables} )
               . " opened)";
             $table_cache_var =
               mysql_version_ge( 5, 1 ) ? "table_open_cache" : "table_cache";
@@ -2537,82 +2529,79 @@ sub mysql_stats {
               . " gradually to avoid file descriptor limits",
               "Read this before increasing $table_cache_var"
               . " over 64: http://bit.ly/1mi7c4C",
-              "Beware that open_files_limit ($myvar{'open_files_limit'}"
+              "Beware that open_files_limit ($myvar{open_files_limit}"
               . ") variable ",
               "should be greater than $table_cache_var ( "
               . "$myvar{$table_cache_var})";
         }
         else {
-            goodprint
-              "Table cache hit rate: $mycalc{'table_cache_hit_rate'}% ("
-              . hr_num( $mystat{'Open_tables'} )
+            goodprint "Table cache hit rate: $mycalc{table_cache_hit_rate}% ("
+              . hr_num( $mystat{Open_tables} )
               . " open / "
-              . hr_num( $mystat{'Opened_tables'} )
+              . hr_num( $mystat{Opened_tables} )
               . " opened)";
         }
     }
 
     # Open files
-    if ( defined $mycalc{'pct_files_open'} ) {
-        if ( $mycalc{'pct_files_open'} > 85 ) {
-            badprint "Open file limit used: $mycalc{'pct_files_open'}% ("
-              . hr_num( $mystat{'Open_files'} ) . "/"
-              . hr_num( $myvar{'open_files_limit'} ) . ")";
+    if ( defined $mycalc{pct_files_open} ) {
+        if ( $mycalc{pct_files_open} > 85 ) {
+            badprint "Open file limit used: $mycalc{pct_files_open}% ("
+              . hr_num( $mystat{Open_files} ) . "/"
+              . hr_num( $myvar{open_files_limit} ) . ")";
             push @adjvars,
-              "open_files_limit (> $myvar{'open_files_limit'})";
+              "open_files_limit (> $myvar{open_files_limit})";
         }
         else {
-            goodprint "Open file limit used: $mycalc{'pct_files_open'}% ("
-              . hr_num( $mystat{'Open_files'} ) . "/"
-              . hr_num( $myvar{'open_files_limit'} ) . ")";
+            goodprint "Open file limit used: $mycalc{pct_files_open}% ("
+              . hr_num( $mystat{Open_files} ) . "/"
+              . hr_num( $myvar{open_files_limit} ) . ")";
         }
     }
 
     # Table locks
-    if ( defined $mycalc{'pct_table_locks_immediate'} ) {
-        if ( $mycalc{'pct_table_locks_immediate'} < 95 ) {
+    if ( defined $mycalc{pct_table_locks_immediate} ) {
+        if ( $mycalc{pct_table_locks_immediate} < 95 ) {
             badprint
-"Table locks acquired immediately: $mycalc{'pct_table_locks_immediate'}%";
+"Table locks acquired immediately: $mycalc{pct_table_locks_immediate}%";
             push @generalrec,
               "Optimize queries and/or use InnoDB to reduce lock wait";
         }
         else {
             goodprint
-"Table locks acquired immediately: $mycalc{'pct_table_locks_immediate'}% ("
-              . hr_num( $mystat{'Table_locks_immediate'} )
+"Table locks acquired immediately: $mycalc{pct_table_locks_immediate}% ("
+              . hr_num( $mystat{Table_locks_immediate} )
               . " immediate / "
-              . hr_num( $mystat{'Table_locks_waited'} +
-                  $mystat{'Table_locks_immediate'} )
+              . hr_num(
+                $mystat{Table_locks_waited} + $mystat{Table_locks_immediate} )
               . " locks)";
         }
     }
 
     # Binlog cache
-    if ( defined $mycalc{'pct_binlog_cache'} ) {
-        if (   $mycalc{'pct_binlog_cache'} < 90
-            && $mystat{'Binlog_cache_use'} > 0 )
+    if ( defined $mycalc{pct_binlog_cache} ) {
+        if (   $mycalc{pct_binlog_cache} < 90
+            && $mystat{Binlog_cache_use} > 0 )
         {
-            badprint "Binlog cache memory access: $mycalc{'pct_binlog_cache'}"
+            badprint "Binlog cache memory access: $mycalc{pct_binlog_cache}"
               . "% ( "
-              . (
-                $mystat{'Binlog_cache_use'} - $mystat{'Binlog_cache_disk_use'} )
-              . " Memory / $mystat{'Binlog_cache_use'} Total)";
+              . ( $mystat{Binlog_cache_use} - $mystat{Binlog_cache_disk_use} )
+              . " Memory / $mystat{Binlog_cache_use} Total)";
             push @generalrec,
               "Increase binlog_cache_size (Actual value: "
-              . "$myvar{'binlog_cache_size'}) ";
+              . "$myvar{binlog_cache_size}) ";
             push @adjvars,
               "binlog_cache_size ("
-              . hr_bytes( $myvar{'binlog_cache_size'} + 16 * 1024 * 1024 )
+              . hr_bytes( $myvar{binlog_cache_size} + 16 * 1024 * 1024 )
               . " ) ";
         }
         else {
-            goodprint "Binlog cache memory access: $mycalc{'pct_binlog_cache'}"
+            goodprint "Binlog cache memory access: $mycalc{pct_binlog_cache}"
               . "% ( "
-              . (
-                $mystat{'Binlog_cache_use'} - $mystat{'Binlog_cache_disk_use'} )
-              . " Memory / $mystat{'Binlog_cache_use'} Total)";
+              . ( $mystat{Binlog_cache_use} - $mystat{Binlog_cache_disk_use} )
+              . " Memory / $mystat{Binlog_cache_use} Total)";
             debugprint "Not enough data to validate binlog cache size\n"
-              if $mystat{'Binlog_cache_use'} < 10;
+              if $mystat{Binlog_cache_use} < 10;
         }
     }
 
@@ -2620,9 +2609,9 @@ sub mysql_stats {
     push @generalrec,
       !mysql_version_ge( 5, 1 )
       ? "Upgrade to MySQL 5.5+ to use asynchronous write"
-      : $myvar{'concurrent_insert'} eq "OFF"
+      : $myvar{concurrent_insert} eq "OFF"
       ? "Enable concurrent_insert by setting it to 'ON'"
-      : $myvar{'concurrent_insert'} eq 0
+      : $myvar{concurrent_insert} eq 0
       ? "Enable concurrent_insert by setting it to 1"
       : ();
 }
@@ -2632,122 +2621,117 @@ sub mysql_myisam {
     subheaderprint "MyISAM Metrics";
 
     # Key buffer usage
-    if ( defined( $mycalc{'pct_key_buffer_used'} ) ) {
-        if ( $mycalc{'pct_key_buffer_used'} < 90 ) {
-            badprint "Key buffer used: $mycalc{'pct_key_buffer_used'}% ("
-              . hr_num( $myvar{'key_buffer_size'} *
-                  $mycalc{'pct_key_buffer_used'} /
-                  100 )
+    if ( defined( $mycalc{pct_key_buffer_used} ) ) {
+        if ( $mycalc{pct_key_buffer_used} < 90 ) {
+            badprint "Key buffer used: $mycalc{pct_key_buffer_used}% ("
+              . hr_num(
+                $myvar{key_buffer_size} * $mycalc{pct_key_buffer_used} / 100 )
               . " used / "
-              . hr_num( $myvar{'key_buffer_size'} )
+              . hr_num( $myvar{key_buffer_size} )
               . " cache)";
-            #push(@adjvars,"key_buffer_size (\~ ".hr_num( $myvar{'key_buffer_size'} * $mycalc{'pct_key_buffer_used'} / 100).")");
+            #push(@adjvars,"key_buffer_size (\~ ".hr_num( $myvar{key_buffer_size} * $mycalc{pct_key_buffer_used} / 100).")");
         }
         else {
-            goodprint "Key buffer used: $mycalc{'pct_key_buffer_used'}% ("
-              . hr_num( $myvar{'key_buffer_size'} *
-                  $mycalc{'pct_key_buffer_used'} /
-                  100 )
+            goodprint "Key buffer used: $mycalc{pct_key_buffer_used}% ("
+              . hr_num(
+                $myvar{key_buffer_size} * $mycalc{pct_key_buffer_used} / 100 )
               . " used / "
-              . hr_num( $myvar{'key_buffer_size'} )
+              . hr_num( $myvar{key_buffer_size} )
               . " cache)";
         }
     }
     else {
         # No queries have run that would use keys
-        debugprint "Key buffer used: $mycalc{'pct_key_buffer_used'}% ("
+        debugprint "Key buffer used: $mycalc{pct_key_buffer_used}% ("
           . hr_num(
-            $myvar{'key_buffer_size'} * $mycalc{'pct_key_buffer_used'} / 100 )
+            $myvar{key_buffer_size} * $mycalc{pct_key_buffer_used} / 100 )
           . " used / "
-          . hr_num( $myvar{'key_buffer_size'} )
+          . hr_num( $myvar{key_buffer_size} )
           . " cache)";
     }
 
     # Key buffer
-    if ( !defined( $mycalc{'total_myisam_indexes'} ) and $doremote == 1 ) {
+    if ( !defined( $mycalc{total_myisam_indexes} ) and $doremote == 1 ) {
         push @generalrec,
           "Unable to calculate MyISAM indexes on remote MySQL server < 5.0.0";
         return;
     }
 
-    if ( $mycalc{'total_myisam_indexes'} =~ /^fail$/ ) {
+    if ( $mycalc{total_myisam_indexes} =~ /^fail$/ ) {
         badprint
           "Cannot calculate MyISAM index size - re-run script as root user";
         return;
     }
 
-    if ( $mycalc{'total_myisam_indexes'} == "0" ) {
+    if ( $mycalc{total_myisam_indexes} == "0" ) {
         badprint
           "None of your MyISAM tables are indexed - add indexes immediately";
         return;
     }
 
-    if (   $myvar{'key_buffer_size'} < $mycalc{'total_myisam_indexes'}
-        && $mycalc{'pct_keys_from_mem'} < 95 )
+    if (   $myvar{key_buffer_size} < $mycalc{total_myisam_indexes}
+        && $mycalc{pct_keys_from_mem} < 95 )
     {
         badprint "Key buffer size / total MyISAM indexes: "
-          . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
-          . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
+          . hr_bytes( $myvar{key_buffer_size} ) . "/"
+          . hr_bytes( $mycalc{total_myisam_indexes} ) . "";
         push @adjvars,
           "key_buffer_size (> "
-          . hr_bytes( $mycalc{'total_myisam_indexes'} ) . ")";
+          . hr_bytes( $mycalc{total_myisam_indexes} ) . ")";
     }
     else {
         goodprint "Key buffer size / total MyISAM indexes: "
-          . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
-          . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
+          . hr_bytes( $myvar{key_buffer_size} ) . "/"
+          . hr_bytes( $mycalc{total_myisam_indexes} ) . "";
     }
 
-    if ( $mystat{'Key_read_requests'} > 0 ) {
-        if ( $mycalc{'pct_keys_from_mem'} < 95 ) {
-            badprint
-              "Read Key buffer hit rate: $mycalc{'pct_keys_from_mem'}% ("
-              . hr_num( $mystat{'Key_read_requests'} )
+    if ( $mystat{Key_read_requests} > 0 ) {
+        if ( $mycalc{pct_keys_from_mem} < 95 ) {
+            badprint "Read Key buffer hit rate: $mycalc{pct_keys_from_mem}% ("
+              . hr_num( $mystat{Key_read_requests} )
               . " cached / "
-              . hr_num( $mystat{'Key_reads'} )
+              . hr_num( $mystat{Key_reads} )
               . " reads)";
         }
         else {
-            goodprint
-              "Read Key buffer hit rate: $mycalc{'pct_keys_from_mem'}% ("
-              . hr_num( $mystat{'Key_read_requests'} )
+            goodprint "Read Key buffer hit rate: $mycalc{pct_keys_from_mem}% ("
+              . hr_num( $mystat{Key_read_requests} )
               . " cached / "
-              . hr_num( $mystat{'Key_reads'} )
+              . hr_num( $mystat{Key_reads} )
               . " reads)";
         }
     }
     else {
         # No queries have run that would use keys
         debugprint "Key buffer size / total MyISAM indexes: "
-          . hr_bytes( $myvar{'key_buffer_size'} ) . "/"
-          . hr_bytes( $mycalc{'total_myisam_indexes'} ) . "";
+          . hr_bytes( $myvar{key_buffer_size} ) . "/"
+          . hr_bytes( $mycalc{total_myisam_indexes} ) . "";
     }
 
-    if ( $mystat{'Key_write_requests'} > 0 ) {
-        if ( $mycalc{'pct_wkeys_from_mem'} < 95 ) {
+    if ( $mystat{Key_write_requests} > 0 ) {
+        if ( $mycalc{pct_wkeys_from_mem} < 95 ) {
             badprint
-              "Write Key buffer hit rate: $mycalc{'pct_wkeys_from_mem'}% ("
-              . hr_num( $mystat{'Key_write_requests'} )
+              "Write Key buffer hit rate: $mycalc{pct_wkeys_from_mem}% ("
+              . hr_num( $mystat{Key_write_requests} )
               . " cached / "
-              . hr_num( $mystat{'Key_writes'} )
+              . hr_num( $mystat{Key_writes} )
               . " writes)";
         }
         else {
             goodprint
-              "Write Key buffer hit rate: $mycalc{'pct_wkeys_from_mem'}% ("
-              . hr_num( $mystat{'Key_write_requests'} )
+              "Write Key buffer hit rate: $mycalc{pct_wkeys_from_mem}% ("
+              . hr_num( $mystat{Key_write_requests} )
               . " cached / "
-              . hr_num( $mystat{'Key_writes'} )
+              . hr_num( $mystat{Key_writes} )
               . " writes)";
         }
     }
     else {
         # No queries have run that would use keys
-        debugprint
-          "Write Key buffer hit rate: $mycalc{'pct_wkeys_from_mem'}% ("
-          . hr_num( $mystat{'Key_write_requests'} )
+        debugprint "Write Key buffer hit rate: $mycalc{pct_wkeys_from_mem}% ("
+          . hr_num( $mystat{Key_write_requests} )
           . " cached / "
-          . hr_num( $mystat{'Key_writes'} )
+          . hr_num( $mystat{Key_writes} )
           . " writes)";
     }
 }
@@ -2757,29 +2741,29 @@ sub mariadb_threadpool {
     subheaderprint "ThreadPool Metrics";
 
     # AriaDB
-    unless ( defined $myvar{'have_threadpool'}
-        && $myvar{'have_threadpool'} eq "YES" )
+    unless ( defined $myvar{have_threadpool}
+        && $myvar{have_threadpool} eq "YES" )
     {
         infoprint "ThreadPool stat is disabled.";
         return;
     }
     infoprint "ThreadPool stat is enabled.";
-    infoprint "Thread Pool Size: " . $myvar{'thread_pool_size'} . " thread(s).";
+    infoprint "Thread Pool Size: " . $myvar{thread_pool_size} . " thread(s).";
 
-    if ( $myvar{'version'} =~ /mariadb|percona/i ) {
+    if ( $myvar{version} =~ /mariadb|percona/i ) {
         infoprint "Using default value is good enough for your version ("
-          . $myvar{'version'} . ")";
+          . $myvar{version} . ")";
         return;
     }
 
-    if ( $myvar{'have_innodb'} eq 'YES' ) {
-        if (   $myvar{'thread_pool_size'} < 16
-            or $myvar{'thread_pool_size'} > 36 )
+    if ( $myvar{have_innodb} eq 'YES' ) {
+        if (   $myvar{thread_pool_size} < 16
+            or $myvar{thread_pool_size} > 36 )
         {
             badprint
 "thread_pool_size between 16 and 36 when using InnoDB storage engine.";
             push @generalrec,
-              "Thread pool size for InnoDB usage ($myvar{'thread_pool_size'})";
+              "Thread pool size for InnoDB usage ($myvar{thread_pool_size})";
             push @adjvars,
               "thread_pool_size between 16 and 36 for InnoDB usage";
         }
@@ -2790,15 +2774,15 @@ sub mariadb_threadpool {
         return;
     }
 
-    return if $myvar{'have_isam'} ne 'YES';
+    return if $myvar{have_isam} ne 'YES';
 
-    if (   $myvar{'thread_pool_size'} < 4
-        or $myvar{'thread_pool_size'} > 8 )
+    if (   $myvar{thread_pool_size} < 4
+        or $myvar{thread_pool_size} > 8 )
     {
         badprint
           "thread_pool_size between 4 and 8 when using MyIsam storage engine.";
         push @generalrec,
-          "Thread pool size for MyIsam usage ($myvar{'thread_pool_size'})";
+          "Thread pool size for MyIsam usage ($myvar{thread_pool_size})";
         push @adjvars,
           "thread_pool_size between 4 and 8 for MyIsam usage";
     }
@@ -2811,8 +2795,8 @@ sub mariadb_threadpool {
 sub get_pf_memory {
 
     # Performance Schema
-    return 0 unless defined $myvar{'performance_schema'};
-    return 0 if $myvar{'performance_schema'} eq 'OFF';
+    return 0 unless defined $myvar{performance_schema};
+    return 0 if $myvar{performance_schema} eq 'OFF';
 
     my @infoPFSMemory = grep /performance_schema.memory/,
       select_array("SHOW ENGINE PERFORMANCE_SCHEMA STATUS");
@@ -2826,8 +2810,8 @@ sub mysqsl_pfs {
     subheaderprint "Performance schema";
 
     # Performance Schema
-    unless ( defined( $myvar{'performance_schema'} )
-        and $myvar{'performance_schema'} eq 'ON' )
+    unless ( defined( $myvar{performance_schema} )
+        and $myvar{performance_schema} eq 'ON' )
     {
         infoprint "Performance schema is disabled.";
         return;
@@ -2846,8 +2830,8 @@ sub mariadb_ariadb {
     subheaderprint "AriaDB Metrics";
 
     # AriaDB
-    unless ( defined $myvar{'have_aria'}
-        and $myvar{'have_aria'} eq "YES" )
+    unless ( defined $myvar{have_aria}
+        and $myvar{have_aria} eq "YES" )
     {
         infoprint "AriaDB is disabled.";
         return;
@@ -2855,56 +2839,54 @@ sub mariadb_ariadb {
     infoprint "AriaDB is enabled.";
 
     # Aria pagecache
-    if ( !defined( $mycalc{'total_aria_indexes'} ) and $doremote == 1 ) {
+    if ( !defined( $mycalc{total_aria_indexes} ) and $doremote == 1 ) {
         push @generalrec,
           "Unable to calculate Aria indexes on remote MySQL server < 5.0.0";
         return;
     }
 
-    if ( $mycalc{'total_aria_indexes'} =~ /^fail$/ ) {
+    if ( $mycalc{total_aria_indexes} =~ /^fail$/ ) {
         badprint
           "Cannot calculate Aria index size - re-run script as root user";
         return;
     }
 
-    if ( $mycalc{'total_aria_indexes'} == "0" ) {
+    if ( $mycalc{total_aria_indexes} == "0" ) {
         badprint
           "None of your Aria tables are indexed - add indexes immediately";
         return;
     }
 
-    if (   $myvar{'aria_pagecache_buffer_size'} < $mycalc{'total_aria_indexes'}
-        && $mycalc{'pct_aria_keys_from_mem'} < 95 )
+    if (   $myvar{aria_pagecache_buffer_size} < $mycalc{total_aria_indexes}
+        && $mycalc{pct_aria_keys_from_mem} < 95 )
     {
         badprint "Aria pagecache size / total Aria indexes: "
-          . hr_bytes( $myvar{'aria_pagecache_buffer_size'} ) . "/"
-          . hr_bytes( $mycalc{'total_aria_indexes'} ) . "";
+          . hr_bytes( $myvar{aria_pagecache_buffer_size} ) . "/"
+          . hr_bytes( $mycalc{total_aria_indexes} ) . "";
         push @adjvars,
           "aria_pagecache_buffer_size (> "
-          . hr_bytes( $mycalc{'total_aria_indexes'} ) . ")";
+          . hr_bytes( $mycalc{total_aria_indexes} ) . ")";
     }
     else {
         goodprint "Aria pagecache size / total Aria indexes: "
-          . hr_bytes( $myvar{'aria_pagecache_buffer_size'} ) . "/"
-          . hr_bytes( $mycalc{'total_aria_indexes'} ) . "";
+          . hr_bytes( $myvar{aria_pagecache_buffer_size} ) . "/"
+          . hr_bytes( $mycalc{total_aria_indexes} ) . "";
     }
 
-    return if $mystat{'Aria_pagecache_read_requests'} <= 0;
+    return if $mystat{Aria_pagecache_read_requests} <= 0;
 
-    if ( $mycalc{'pct_aria_keys_from_mem'} < 95 ) {
-        badprint
-          "Aria pagecache hit rate: $mycalc{'pct_aria_keys_from_mem'}% ("
-          . hr_num( $mystat{'Aria_pagecache_read_requests'} )
+    if ( $mycalc{pct_aria_keys_from_mem} < 95 ) {
+        badprint "Aria pagecache hit rate: $mycalc{pct_aria_keys_from_mem}% ("
+          . hr_num( $mystat{Aria_pagecache_read_requests} )
           . " cached / "
-          . hr_num( $mystat{'Aria_pagecache_reads'} )
+          . hr_num( $mystat{Aria_pagecache_reads} )
           . " reads)";
     }
     else {
-        goodprint
-          "Aria pagecache hit rate: $mycalc{'pct_aria_keys_from_mem'}% ("
-          . hr_num( $mystat{'Aria_pagecache_read_requests'} )
+        goodprint "Aria pagecache hit rate: $mycalc{pct_aria_keys_from_mem}% ("
+          . hr_num( $mystat{Aria_pagecache_read_requests} )
           . " cached / "
-          . hr_num( $mystat{'Aria_pagecache_reads'} )
+          . hr_num( $mystat{Aria_pagecache_reads} )
           . " reads)";
     }
 }
@@ -2914,7 +2896,7 @@ sub mariadb_tokudb {
     subheaderprint "TokuDB Metrics";
 
     infoprint "TokuDB is "
-      . ( defined $myvar{'have_tokudb'} && $myvar{'have_tokudb'} eq "YES" )
+      . ( defined $myvar{have_tokudb} && $myvar{have_tokudb} eq "YES" )
       ? "enabled."
       : "disabled.";
 }
@@ -2928,9 +2910,9 @@ sub trim {
 }
 
 sub get_wsrep_options {
-    return () unless defined $myvar{'wsrep_provider_options'};
+    return () unless defined $myvar{wsrep_provider_options};
 
-    my @galera_options = split /;/, $myvar{'wsrep_provider_options'};
+    my @galera_options = split /;/, $myvar{wsrep_provider_options};
     remove_cr @galera_options;
     @galera_options = remove_empty @galera_options;
     debugprint Dumper( \@galera_options );
@@ -2946,7 +2928,7 @@ sub get_gcache_memory {
 
 sub get_wsrep_option {
     my $key = shift;
-    return '' unless defined $myvar{'wsrep_provider_options'};
+    return '' unless defined $myvar{wsrep_provider_options};
     my @galera_options = get_wsrep_options;
     return '' unless scalar(@galera_options) > 0;
     my @memValues = grep /\s*$key =/, @galera_options;
@@ -2960,8 +2942,8 @@ sub mariadb_galera {
     subheaderprint "Galera Metrics";
 
     # Galera Cluster
-    unless ( defined $myvar{'have_galera'}
-        && $myvar{'have_galera'} eq "YES" )
+    unless ( defined $myvar{have_galera}
+        && $myvar{have_galera} eq "YES" )
     {
         infoprint "Galera is disabled.";
         return;
@@ -3013,14 +2995,14 @@ sub mariadb_galera {
     else {
         goodprint "All tables are InnoDB tables";
     }
-    if ( $myvar{'binlog_format'} ne 'ROW' ) {
+    if ( $myvar{binlog_format} ne 'ROW' ) {
         badprint "Binlog format should be in ROW mode.";
         push @adjvars, "binlog_format = ROW";
     }
     else {
         goodprint "Binlog format is in ROW mode.";
     }
-    if ( $myvar{'innodb_flush_log_at_trx_commit'} != 0 ) {
+    if ( $myvar{innodb_flush_log_at_trx_commit} != 0 ) {
         badprint "Innodb flush log at each commit should be disabled.";
         push @adjvars, "innodb_flush_log_at_trx_commit = 0";
     }
@@ -3028,21 +3010,21 @@ sub mariadb_galera {
         goodprint "Innodb flush log at each commit is disabled for Galera.";
     }
 
-    infoprint "Read consistency mode :$myvar{'wsrep_causal_reads'}";
+    infoprint "Read consistency mode :$myvar{wsrep_causal_reads}";
 
-    if ( defined( $myvar{'wsrep_cluster_name'} )
-        and $myvar{'wsrep_on'} eq "ON" )
+    if ( defined( $myvar{wsrep_cluster_name} )
+        and $myvar{wsrep_on} eq "ON" )
     {
         goodprint "Galera WsREP is enabled.";
-        if ( defined( $myvar{'wsrep_cluster_address'} )
-            and trim("$myvar{'wsrep_cluster_address'}") ne "" )
+        if ( defined( $myvar{wsrep_cluster_address} )
+            and trim("$myvar{wsrep_cluster_address}") ne "" )
         {
             goodprint "Galera Cluster address is defined: "
-              . $myvar{'wsrep_cluster_address'};
-            my @NodesTmp = split /,/, $myvar{'wsrep_cluster_address'};
+              . $myvar{wsrep_cluster_address};
+            my @NodesTmp = split /,/, $myvar{wsrep_cluster_address};
             my $nbNodes = @NodesTmp;
             infoprint "There are $nbNodes nodes in wsrep_cluster_address";
-            my $nbNodesSize = trim( $mystat{'wsrep_cluster_size'} );
+            my $nbNodesSize = trim( $mystat{wsrep_cluster_size} );
             if ( $nbNodesSize == 3 or $nbNodesSize == 5 ) {
                 goodprint "There are $nbNodesSize nodes in wsrep_cluster_size.";
             }
@@ -3065,11 +3047,11 @@ sub mariadb_galera {
               "set up wsrep_cluster_address variable for Galera replication";
         }
 
-        if ( defined( $myvar{'wsrep_cluster_name'} )
-            and trim( $myvar{'wsrep_cluster_name'} ) ne "" )
+        if ( defined( $myvar{wsrep_cluster_name} )
+            and trim( $myvar{wsrep_cluster_name} ) ne "" )
         {
             goodprint "Galera Cluster name is defined: "
-              . $myvar{'wsrep_cluster_name'};
+              . $myvar{wsrep_cluster_name};
         }
         else {
             badprint "Galera Cluster name is undefined";
@@ -3077,11 +3059,10 @@ sub mariadb_galera {
               "set up wsrep_cluster_name variable for Galera replication";
         }
 
-        if ( defined( $myvar{'wsrep_node_name'} )
-            and trim( $myvar{'wsrep_node_name'} ) ne "" )
+        if ( defined( $myvar{wsrep_node_name} )
+            and trim( $myvar{wsrep_node_name} ) ne "" )
         {
-            goodprint "Galera Node name is defined: "
-              . $myvar{'wsrep_node_name'};
+            goodprint "Galera Node name is defined: " . $myvar{wsrep_node_name};
         }
         else {
             badprint "Galera node name is undefined";
@@ -3089,7 +3070,7 @@ sub mariadb_galera {
               "set up wsrep_node_name variable for Galera replication";
         }
 
-        if ( trim( $myvar{'wsrep_notify_cmd'} ) ne "" ) {
+        if ( trim( $myvar{wsrep_notify_cmd} ) ne "" ) {
             goodprint "Galera Notify command is defined.";
         }
         else {
@@ -3098,7 +3079,7 @@ sub mariadb_galera {
               "set up parameter wsrep_notify_cmd to be notify";
         }
 
-        if ( trim( $myvar{'wsrep_sst_method'} ) !~ "^xtrabackup.*" ) {
+        if ( trim( $myvar{wsrep_sst_method} ) !~ "^xtrabackup.*" ) {
             badprint "Galera SST method is not xtrabackup based.";
             push @adjvars,
               "set up parameter wsrep_sst_method to xtrabackup based parameter";
@@ -3107,7 +3088,7 @@ sub mariadb_galera {
             goodprint "SST Method is based on xtrabackup.";
         }
 
-        if ( trim( $myvar{'wsrep_OSU_method'} ) eq "TOI" ) {
+        if ( trim( $myvar{wsrep_OSU_method} ) eq "TOI" ) {
             goodprint "TOI is default mode for upgrade.";
         }
         else {
@@ -3116,14 +3097,14 @@ sub mariadb_galera {
         }
 
         infoprint "Max WsRep message : "
-          . hr_bytes( $myvar{'wsrep_max_ws_size'} );
+          . hr_bytes( $myvar{wsrep_max_ws_size} );
     }
     else {
         badprint "Galera WsREP is disabled";
     }
 
-    if ( defined( $mystat{'wsrep_connected'} )
-        and $mystat{'wsrep_connected'} eq "ON" )
+    if ( defined( $mystat{wsrep_connected} )
+        and $mystat{wsrep_connected} eq "ON" )
     {
         goodprint "Node is connected";
     }
@@ -3131,8 +3112,8 @@ sub mariadb_galera {
         badprint "Node is disconnected";
     }
 
-    if ( defined( $mystat{'wsrep_ready'} )
-        and $mystat{'wsrep_ready'} eq "ON" )
+    if ( defined( $mystat{wsrep_ready} )
+        and $mystat{wsrep_ready} eq "ON" )
     {
         goodprint "Node is ready";
     }
@@ -3140,9 +3121,9 @@ sub mariadb_galera {
         badprint "Node is not ready";
     }
 
-    infoprint "Cluster status :" . $mystat{'wsrep_cluster_status'};
-    if ( defined( $mystat{'wsrep_cluster_status'} )
-        and $mystat{'wsrep_cluster_status'} eq "Primary" )
+    infoprint "Cluster status :" . $mystat{wsrep_cluster_status};
+    if ( defined( $mystat{wsrep_cluster_status} )
+        and $mystat{wsrep_cluster_status} eq "Primary" )
     {
         goodprint "Galera cluster is consistent and ready for operations";
     }
@@ -3150,32 +3131,31 @@ sub mariadb_galera {
         badprint "Cluster is not consistent and ready";
     }
 
-    if ( $mystat{'wsrep_local_state_uuid'} eq
-        $mystat{'wsrep_cluster_state_uuid'} )
+    if ( $mystat{wsrep_local_state_uuid} eq $mystat{wsrep_cluster_state_uuid} )
     {
         goodprint "Node and whole cluster at the same level: "
-          . $mystat{'wsrep_cluster_state_uuid'};
+          . $mystat{wsrep_cluster_state_uuid};
     }
     else {
         badprint "Node and whole cluster not the same level";
-        infoprint "Node    state uuid: " . $mystat{'wsrep_local_state_uuid'};
-        infoprint "Cluster state uuid: " . $mystat{'wsrep_cluster_state_uuid'};
+        infoprint "Node    state uuid: " . $mystat{wsrep_local_state_uuid};
+        infoprint "Cluster state uuid: " . $mystat{wsrep_cluster_state_uuid};
     }
 
-    if ( $mystat{'wsrep_local_state_comment'} eq 'Synced' ) {
+    if ( $mystat{wsrep_local_state_comment} eq 'Synced' ) {
         goodprint "Node is synced with whole cluster.";
     }
     else {
         badprint "Node is not synced";
-        infoprint "Node State : " . $mystat{'wsrep_local_state_comment'};
+        infoprint "Node State : " . $mystat{wsrep_local_state_comment};
     }
 
-    if ( $mystat{'wsrep_local_cert_failures'} == 0 ) {
+    if ( $mystat{wsrep_local_cert_failures} == 0 ) {
         goodprint "There is no certification failures detected.";
     }
     else {
         badprint "There is "
-          . $mystat{'wsrep_local_cert_failures'}
+          . $mystat{wsrep_local_cert_failures}
           . " certification failure(s)detected.";
     }
 
@@ -3192,9 +3172,9 @@ sub mysql_innodb {
     subheaderprint "InnoDB Metrics";
 
     # InnoDB
-    unless ( defined $myvar{'have_innodb'}
-        && $myvar{'have_innodb'} eq "YES"
-        && defined $enginestats{'InnoDB'} )
+    unless ( defined $myvar{have_innodb}
+        && $myvar{have_innodb} eq "YES"
+        && defined $enginestats{InnoDB} )
     {
         infoprint "InnoDB is disabled.";
         if ( mysql_version_ge( 5, 5 ) ) {
@@ -3207,191 +3187,190 @@ sub mysql_innodb {
 
     if ( $opt{buffers} ne 0 ) {
         infoprint "InnoDB Buffers";
-        if ( defined $myvar{'innodb_buffer_pool_size'} ) {
+        if ( defined $myvar{innodb_buffer_pool_size} ) {
             infoprint " +-- InnoDB Buffer Pool: "
-              . hr_bytes( $myvar{'innodb_buffer_pool_size'} ) . "";
+              . hr_bytes( $myvar{innodb_buffer_pool_size} ) . "";
         }
-        if ( defined $myvar{'innodb_buffer_pool_instances'} ) {
+        if ( defined $myvar{innodb_buffer_pool_instances} ) {
             infoprint " +-- InnoDB Buffer Pool Instances: "
-              . $myvar{'innodb_buffer_pool_instances'} . "";
+              . $myvar{innodb_buffer_pool_instances} . "";
         }
-        if ( defined $myvar{'innodb_additional_mem_pool_size'} ) {
+        if ( defined $myvar{innodb_additional_mem_pool_size} ) {
             infoprint " +-- InnoDB Additional Mem Pool: "
-              . hr_bytes( $myvar{'innodb_additional_mem_pool_size'} ) . "";
+              . hr_bytes( $myvar{innodb_additional_mem_pool_size} ) . "";
         }
-        if ( defined $myvar{'innodb_log_buffer_size'} ) {
+        if ( defined $myvar{innodb_log_buffer_size} ) {
             infoprint " +-- InnoDB Log Buffer: "
-              . hr_bytes( $myvar{'innodb_log_buffer_size'} ) . "";
+              . hr_bytes( $myvar{innodb_log_buffer_size} ) . "";
         }
-        if ( defined $mystat{'Innodb_buffer_pool_pages_free'} ) {
+        if ( defined $mystat{Innodb_buffer_pool_pages_free} ) {
             infoprint " +-- InnoDB Log Buffer Free: "
-              . hr_bytes( $mystat{'Innodb_buffer_pool_pages_free'} ) . "";
+              . hr_bytes( $mystat{Innodb_buffer_pool_pages_free} ) . "";
         }
-        if ( defined $mystat{'Innodb_buffer_pool_pages_total'} ) {
+        if ( defined $mystat{Innodb_buffer_pool_pages_total} ) {
             infoprint " +-- InnoDB Log Buffer Used: "
-              . hr_bytes( $mystat{'Innodb_buffer_pool_pages_total'} ) . "";
+              . hr_bytes( $mystat{Innodb_buffer_pool_pages_total} ) . "";
         }
     }
 
     # InnoDB Buffer Pull Size
-    if ( $myvar{'innodb_buffer_pool_size'} > $enginestats{'InnoDB'} ) {
+    if ( $myvar{innodb_buffer_pool_size} > $enginestats{InnoDB} ) {
         goodprint "InnoDB buffer pool / data size: "
-          . hr_bytes( $myvar{'innodb_buffer_pool_size'} ) . "/"
-          . hr_bytes( $enginestats{'InnoDB'} ) . "";
+          . hr_bytes( $myvar{innodb_buffer_pool_size} ) . "/"
+          . hr_bytes( $enginestats{InnoDB} ) . "";
     }
     else {
         badprint "InnoDB buffer pool / data size: "
-          . hr_bytes( $myvar{'innodb_buffer_pool_size'} ) . "/"
-          . hr_bytes( $enginestats{'InnoDB'} ) . "";
+          . hr_bytes( $myvar{innodb_buffer_pool_size} ) . "/"
+          . hr_bytes( $enginestats{InnoDB} ) . "";
         push @adjvars,
           "innodb_buffer_pool_size (>= "
-          . hr_bytes_rnd( $enginestats{'InnoDB'} )
+          . hr_bytes_rnd( $enginestats{InnoDB} )
           . ") if possible.";
     }
 
     # InnoDB Buffer Pull Instances (MySQL 5.6.6+)
-    if ( defined( $myvar{'innodb_buffer_pool_instances'} ) ) {
+    if ( defined( $myvar{innodb_buffer_pool_instances} ) ) {
 
         # Bad Value if > 64
-        if ( $myvar{'innodb_buffer_pool_instances'} > 64 ) {
+        if ( $myvar{innodb_buffer_pool_instances} > 64 ) {
             badprint "InnoDB buffer pool instances: "
-              . $myvar{'innodb_buffer_pool_instances'} . "";
+              . $myvar{innodb_buffer_pool_instances} . "";
             push @adjvars, "innodb_buffer_pool_instances (<= 64)";
         }
 
         # InnoDB Buffer Pull Size > 1Go
-        if ( $myvar{'innodb_buffer_pool_size'} > 1024 * 1024 * 1024 ) {
+        if ( $myvar{innodb_buffer_pool_size} > 1024 * 1024 * 1024 ) {
 
             # InnoDB Buffer Pull Size / 1Go = InnoDB Buffer Pull Instances limited to 64 max.
 
             #  InnoDB Buffer Pull Size > 64Go
             my $max_innodb_buffer_pool_instances =
-              int( $myvar{'innodb_buffer_pool_size'} / ( 1024 * 1024 * 1024 ) );
+              int( $myvar{innodb_buffer_pool_size} / ( 1024 * 1024 * 1024 ) );
             $max_innodb_buffer_pool_instances = 64
               if ( $max_innodb_buffer_pool_instances > 64 );
 
-            if ( $myvar{'innodb_buffer_pool_instances'} !=
+            if ( $myvar{innodb_buffer_pool_instances} !=
                 $max_innodb_buffer_pool_instances )
             {
                 badprint "InnoDB buffer pool instances: "
-                  . $myvar{'innodb_buffer_pool_instances'} . "";
+                  . $myvar{innodb_buffer_pool_instances} . "";
                 push @adjvars,
                   "innodb_buffer_pool_instances(="
                   . $max_innodb_buffer_pool_instances . ")";
             }
             else {
                 goodprint "InnoDB buffer pool instances: "
-                  . $myvar{'innodb_buffer_pool_instances'} . "";
+                  . $myvar{innodb_buffer_pool_instances} . "";
             }
 
             # InnoDB Buffer Pull Size < 1Go
         }
         else {
-            if ( $myvar{'innodb_buffer_pool_instances'} != 1 ) {
+            if ( $myvar{innodb_buffer_pool_instances} != 1 ) {
                 badprint
 "InnoDB buffer pool <= 1G and innodb_buffer_pool_instances(!=1).";
                 push @adjvars, "innodb_buffer_pool_instances (=1)";
             }
             else {
                 goodprint "InnoDB buffer pool instances: "
-                  . $myvar{'innodb_buffer_pool_instances'} . "";
+                  . $myvar{innodb_buffer_pool_instances} . "";
             }
         }
     }
 
     # InnoDB Used Buffer Pool
-    if ( defined $mycalc{'pct_innodb_buffer_used'}
-        && $mycalc{'pct_innodb_buffer_used'} < 80 )
+    if ( defined $mycalc{pct_innodb_buffer_used}
+        && $mycalc{pct_innodb_buffer_used} < 80 )
     {
         badprint "InnoDB Used buffer: "
-          . $mycalc{'pct_innodb_buffer_used'} . "% ("
-          . ( $mystat{'Innodb_buffer_pool_pages_total'} -
-              $mystat{'Innodb_buffer_pool_pages_free'} )
+          . $mycalc{pct_innodb_buffer_used} . "% ("
+          . ( $mystat{Innodb_buffer_pool_pages_total} -
+              $mystat{Innodb_buffer_pool_pages_free} )
           . " used/ "
-          . $mystat{'Innodb_buffer_pool_pages_total'}
+          . $mystat{Innodb_buffer_pool_pages_total}
           . " total)";
     }
     else {
         goodprint "InnoDB Used buffer: "
-          . $mycalc{'pct_innodb_buffer_used'} . "% ("
-          . ( $mystat{'Innodb_buffer_pool_pages_total'} -
-              $mystat{'Innodb_buffer_pool_pages_free'} )
+          . $mycalc{pct_innodb_buffer_used} . "% ("
+          . ( $mystat{Innodb_buffer_pool_pages_total} -
+              $mystat{Innodb_buffer_pool_pages_free} )
           . " used/ "
-          . $mystat{'Innodb_buffer_pool_pages_total'}
+          . $mystat{Innodb_buffer_pool_pages_total}
           . " total)";
     }
 
     # InnoDB Read efficency
-    if ( defined $mycalc{'pct_read_efficiency'}
-        && $mycalc{'pct_read_efficiency'} < 90 )
+    if ( defined $mycalc{pct_read_efficiency}
+        && $mycalc{pct_read_efficiency} < 90 )
     {
         badprint "InnoDB Read buffer efficiency: "
-          . $mycalc{'pct_read_efficiency'} . "% ("
-          . ( $mystat{'Innodb_buffer_pool_read_requests'} -
-              $mystat{'Innodb_buffer_pool_reads'} )
+          . $mycalc{pct_read_efficiency} . "% ("
+          . ( $mystat{Innodb_buffer_pool_read_requests} -
+              $mystat{Innodb_buffer_pool_reads} )
           . " hits/ "
-          . $mystat{'Innodb_buffer_pool_read_requests'}
+          . $mystat{Innodb_buffer_pool_read_requests}
           . " total)";
     }
     else {
         goodprint "InnoDB Read buffer efficiency: "
-          . $mycalc{'pct_read_efficiency'} . "% ("
-          . ( $mystat{'Innodb_buffer_pool_read_requests'} -
-              $mystat{'Innodb_buffer_pool_reads'} )
+          . $mycalc{pct_read_efficiency} . "% ("
+          . ( $mystat{Innodb_buffer_pool_read_requests} -
+              $mystat{Innodb_buffer_pool_reads} )
           . " hits/ "
-          . $mystat{'Innodb_buffer_pool_read_requests'}
+          . $mystat{Innodb_buffer_pool_read_requests}
           . " total)";
     }
 
     # InnoDB Write efficiency
-    if ( defined $mycalc{'pct_write_efficiency'}
-        && $mycalc{'pct_write_efficiency'} < 90 )
+    if ( defined $mycalc{pct_write_efficiency}
+        && $mycalc{pct_write_efficiency} < 90 )
     {
         badprint "InnoDB Write Log efficiency: "
-          . abs( $mycalc{'pct_write_efficiency'} ) . "% ("
-          . abs( $mystat{'Innodb_log_write_requests'} -
-              $mystat{'Innodb_log_writes'} )
+          . abs( $mycalc{pct_write_efficiency} ) . "% ("
+          . abs(
+            $mystat{Innodb_log_write_requests} - $mystat{Innodb_log_writes} )
           . " hits/ "
-          . $mystat{'Innodb_log_write_requests'}
+          . $mystat{Innodb_log_write_requests}
           . " total)";
     }
     else {
         goodprint "InnoDB Write log efficiency: "
-          . $mycalc{'pct_write_efficiency'} . "% ("
-          . ( $mystat{'Innodb_log_write_requests'} -
-              $mystat{'Innodb_log_writes'} )
+          . $mycalc{pct_write_efficiency} . "% ("
+          . ( $mystat{Innodb_log_write_requests} - $mystat{Innodb_log_writes} )
           . " hits/ "
-          . $mystat{'Innodb_log_write_requests'}
+          . $mystat{Innodb_log_write_requests}
           . " total)";
     }
 
     # InnoDB Log Waits
-    if ( defined $mystat{'Innodb_log_waits'}
-        && $mystat{'Innodb_log_waits'} > 0 )
+    if ( defined $mystat{Innodb_log_waits}
+        && $mystat{Innodb_log_waits} > 0 )
     {
         badprint "InnoDB log waits: " . percentage(
-            $mystat{'Innodb_log_waits'},
-            $mystat{'Innodb_log_writes'} )
+            $mystat{Innodb_log_waits},
+            $mystat{Innodb_log_writes} )
           . "% ("
-          . $mystat{'Innodb_log_waits'}
+          . $mystat{Innodb_log_waits}
           . " waits / "
-          . $mystat{'Innodb_log_writes'}
+          . $mystat{Innodb_log_writes}
           . " writes)";
         push @adjvars,
           "innodb_log_buffer_size (>= "
-          . hr_bytes_rnd( $myvar{'innodb_log_buffer_size'} ) . ")";
+          . hr_bytes_rnd( $myvar{innodb_log_buffer_size} ) . ")";
     }
     else {
         goodprint "InnoDB log waits: " . percentage(
-            $mystat{'Innodb_log_waits'},
-            $mystat{'Innodb_log_writes'} )
+            $mystat{Innodb_log_waits},
+            $mystat{Innodb_log_writes} )
           . "% ("
-          . $mystat{'Innodb_log_waits'}
+          . $mystat{Innodb_log_waits}
           . " waits / "
-          . $mystat{'Innodb_log_writes'}
+          . $mystat{Innodb_log_writes}
           . " writes)";
     }
-    $result{'Calculations'} = {%mycalc};
+    $result{Calculations} = {%mycalc};
 }
 
 # Recommendations for Database metrics
@@ -3439,16 +3418,16 @@ sub mysql_databases {
       )
       . ")";
 
-    $result{'Databases'}{'All databases'}{'Rows'} =
+    $result{Databases}{'All databases'}{Rows} =
       ( $totaldbinfo[0] eq 'NULL' ? 0 : $totaldbinfo[0] );
-    $result{'Databases'}{'All databases'}{'Data Size'} = $totaldbinfo[1];
-    $result{'Databases'}{'All databases'}{'Data Pct'} =
+    $result{Databases}{'All databases'}{'Data Size'} = $totaldbinfo[1];
+    $result{Databases}{'All databases'}{'Data Pct'} =
       percentage( $totaldbinfo[1], $totaldbinfo[3] ) . "%";
-    $result{'Databases'}{'All databases'}{'Index Size'} = $totaldbinfo[2];
-    $result{'Databases'}{'All databases'}{'Index Pct'} =
+    $result{Databases}{'All databases'}{'Index Size'} = $totaldbinfo[2];
+    $result{Databases}{'All databases'}{'Index Pct'} =
       percentage( $totaldbinfo[2], $totaldbinfo[3] ) . "%";
-    $result{'Databases'}{'All databases'}{'Total Size'} = $totaldbinfo[3];
-    print "\n" unless ( $opt{'silent'} or $opt{'json'} );
+    $result{Databases}{'All databases'}{'Total Size'} = $totaldbinfo[3];
+    print "\n" unless ( $opt{silent} or $opt{json} );
 
     for (@dblist) {
         chomp($_);
@@ -3503,16 +3482,16 @@ sub mysql_databases {
           if $dbinfo[2] < $dbinfo[3];
         badprint "There are $dbinfo[5] storage engines. Be careful. \n"
           if $dbinfo[5] > 1;
-        $result{'Databases'}{ $dbinfo[0] }{'Rows'}       = $dbinfo[1];
-        $result{'Databases'}{ $dbinfo[0] }{'Tables'}     = $dbinfo[6];
-        $result{'Databases'}{ $dbinfo[0] }{'Collations'} = $dbinfo[7];
-        $result{'Databases'}{ $dbinfo[0] }{'Data Size'}  = $dbinfo[2];
-        $result{'Databases'}{ $dbinfo[0] }{'Data Pct'} =
+        $result{Databases}{ $dbinfo[0] }{Rows}        = $dbinfo[1];
+        $result{Databases}{ $dbinfo[0] }{Tables}      = $dbinfo[6];
+        $result{Databases}{ $dbinfo[0] }{Collations}  = $dbinfo[7];
+        $result{Databases}{ $dbinfo[0] }{'Data Size'} = $dbinfo[2];
+        $result{Databases}{ $dbinfo[0] }{'Data Pct'} =
           percentage( $dbinfo[2], $dbinfo[4] ) . "%";
-        $result{'Databases'}{ $dbinfo[0] }{'Index Size'} = $dbinfo[3];
-        $result{'Databases'}{ $dbinfo[0] }{'Index Pct'} =
+        $result{Databases}{ $dbinfo[0] }{'Index Size'} = $dbinfo[3];
+        $result{Databases}{ $dbinfo[0] }{'Index Pct'} =
           percentage( $dbinfo[3], $dbinfo[4] ) . "%";
-        $result{'Databases'}{ $dbinfo[0] }{'Total Size'} = $dbinfo[4];
+        $result{Databases}{ $dbinfo[0] }{'Total Size'} = $dbinfo[4];
 
         if ( $dbinfo[7] > 1 ) {
             badprint "$dbinfo[7] different collations for database $dbinfo[0]";
@@ -3637,21 +3616,21 @@ ENDSQL
         infoprint " +-- TYPE        : $info[6]";
         infoprint " +-- SELECTIVITY : $info[7]%";
 
-        $result{'Indexes'}{ $info[1] }{'Colunm'}            = $info[0];
-        $result{'Indexes'}{ $info[1] }{'Sequence number'}   = $info[2];
-        $result{'Indexes'}{ $info[1] }{'Number of collunm'} = $info[3];
-        $result{'Indexes'}{ $info[1] }{'Cardianality'}      = $info[4];
-        $result{'Indexes'}{ $info[1] }{'Row number'}        = $info[5];
-        $result{'Indexes'}{ $info[1] }{'Index Type'}        = $info[6];
-        $result{'Indexes'}{ $info[1] }{'Selectivity'}       = $info[7];
+        $result{Indexes}{ $info[1] }{Colunm}              = $info[0];
+        $result{Indexes}{ $info[1] }{'Sequence number'}   = $info[2];
+        $result{Indexes}{ $info[1] }{'Number of collunm'} = $info[3];
+        $result{Indexes}{ $info[1] }{Cardianality}        = $info[4];
+        $result{Indexes}{ $info[1] }{'Row number'}        = $info[5];
+        $result{Indexes}{ $info[1] }{'Index Type'}        = $info[6];
+        $result{Indexes}{ $info[1] }{Selectivity}         = $info[7];
         if ( $info[7] < 25 ) {
             badprint "$info[1] has a low selectivity";
         }
     }
 
     return
-      unless defined $myvar{'performance_schema'}
-      and $myvar{'performance_schema'} eq 'ON';
+      unless defined $myvar{performance_schema}
+      and $myvar{performance_schema} eq 'ON';
 
     $selIdxReq = <<'ENDSQL';
 SELECT CONCAT(CONCAT(object_schema,'.'),object_name) AS 'table', index_name
@@ -3669,7 +3648,7 @@ ENDSQL
         debugprint "$_";
         my @info = split /\s/;
         badprint "Index: $info[1] on $info[0] is not used.";
-        push @{ $result{'Indexes'}{'Unused Indexes'} }, join ".", @info;
+        push @{ $result{Indexes}{'Unused Indexes'} }, join ".", @info;
     }
 }
 
@@ -3682,7 +3661,7 @@ sub make_recommendations {
     }
     if ( @adjvars > 0 ) {
         prettyprint "Variables to adjust:";
-        if ( $mycalc{'pct_max_physical_memory'} > 90 ) {
+        if ( $mycalc{pct_max_physical_memory} > 90 ) {
             prettyprint
               "  *** MySQL's maximum memory usage is dangerously high ***\n"
               . "  *** Add RAM before increasing MySQL buffer variables ***";
@@ -3713,12 +3692,12 @@ sub string2file {
 "Unable to open $filename in write mode. Please check permissions for this file or directory";
     print $fh $content if defined($content);
     close $fh;
-    debugprint $content if ( $opt{'debug'} );
+    debugprint $content if ( $opt{debug} );
 }
 
 sub file2array {
     my $filename = shift;
-    debugprint "* reading $filename" if ( $opt{'debug'} );
+    debugprint "* reading $filename" if ( $opt{debug} );
     my $fh;
     open( $fh, q(<), "$filename" )
       or die "Couldn't open $filename for reading: $!\n";
@@ -3731,8 +3710,8 @@ sub file2string {
     return join( '', file2array(@_) );
 }
 
-my $templateModel = $opt{'template'} ne 0
-  ? file2string( $opt{'template'} )
+my $templateModel = $opt{template} ne 0
+  ? file2string( $opt{template} )
   # DEFAULT REPORT TEMPLATE
   : <<'END_TEMPLATE';
 <!DOCTYPE html>
@@ -3753,13 +3732,13 @@ my $templateModel = $opt{'template'} ne 0
 END_TEMPLATE
 
 sub dump_result {
-    if ( $opt{'debug'} ) {
+    if ( $opt{debug} ) {
         debugprint Dumper( \%result );
     }
 
-    debugprint "HTML REPORT: $opt{'reportfile'}";
+    debugprint "HTML REPORT: $opt{reportfile}";
 
-    if ( $opt{'reportfile'} ne 0 ) {
+    if ( $opt{reportfile} ne 0 ) {
         eval "{ use Text::Template }";
         if ($@) {
             badprint "Text::Template Module is needed.";
@@ -3776,21 +3755,21 @@ sub dump_result {
             no warnings 'once';
             die "Couldn't construct template: $Text::Template::ERROR";
           };
-        open my $fh, q(>), $opt{'reportfile'}
+        open my $fh, q(>), $opt{reportfile}
           or die
-"Unable to open $opt{'reportfile'} in write mode. please check permissions for this file or directory";
+"Unable to open $opt{reportfile} in write mode. please check permissions for this file or directory";
         $template->fill_in( HASH => $vars, OUTPUT => $fh );
         close $fh;
     }
 
-    if ( $opt{'json'} ne 0 ) {
+    if ( $opt{json} ne 0 ) {
         eval "{ use JSON }";
         if ($@) {
             print "JSON Module is needed.";
             exit 1;
         }
         my $json = JSON->new->allow_nonref;
-        print $json->utf8(1)->pretty( ( $opt{'prettyjson'} ? 1 : 0 ) )
+        print $json->utf8(1)->pretty( ( $opt{prettyjson} ? 1 : 0 ) )
           ->encode( \%result );
     }
 }
@@ -3798,7 +3777,7 @@ sub dump_result {
 sub which {
     my $prog_name   = shift;
     my $path_string = shift;
-    my @path_array  = split /:/, $ENV{'PATH'};
+    my @path_array  = split /:/, $ENV{PATH};
 
     for my $path (@path_array) {
         if ( -x "$path/$prog_name" ) {
