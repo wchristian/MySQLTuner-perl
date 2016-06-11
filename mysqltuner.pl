@@ -297,6 +297,17 @@ sub usage {
     exit 0;
 }
 
+sub ok {
+    my ( $decision, $goodprint, $badprint ) = @_;
+    if ($decision) {
+        goodprint $goodprint;
+    }
+    else {
+        badprint $goodprint || $badprint;
+    }
+    return $decision;
+}
+
 # Functions that handle the print styles
 sub prettyprint {
     print "$_[0]\n" if !$opt{silent} and !$opt{json};
@@ -1456,41 +1467,30 @@ sub get_replication_status {
         return;
     }
 
-    my ($io_running) = $myrepl{Slave_IO_Running};
+    my $io_running = $myrepl{Slave_IO_Running};
     debugprint "IO RUNNING: $io_running ";
-    my ($sql_running) = $myrepl{Slave_SQL_Running};
+    my $sql_running = $myrepl{Slave_SQL_Running};
     debugprint "SQL RUNNING: $sql_running ";
-    my ($seconds_behind_master) = $myrepl{Seconds_Behind_Master};
+    my $seconds_behind_master = $myrepl{Seconds_Behind_Master};
     debugprint "SECONDS : $seconds_behind_master ";
 
-    if ( defined($io_running)
-        and ( $io_running !~ /yes/i or $sql_running !~ /yes/i ) )
-    {
-        badprint
-          "This replication slave is not running but seems to be configured.";
-    }
+    badprint "This replication slave is not running but seems to be configured."
+      if defined $io_running
+      and ( $io_running !~ /yes/i or $sql_running !~ /yes/i );
 
-    if (   defined($io_running)
-        && $io_running =~ /yes/i
-        && $sql_running =~ /yes/i )
-    {
-        my $is        = "This replication slave is";
-        my $read_only = "$is running with the read_only option";
-        if ( $myvar{read_only} eq 'OFF' ) {
-            badprint "$read_only disabled.";
-        }
-        else {
-            goodprint "$read_only enabled.";
-        }
+    return
+         if !defined $io_running
+      or $io_running !~ /yes/i
+      or $sql_running !~ /yes/i;
 
-        if ( $seconds_behind_master > 0 ) {
-            badprint "$is lagging and slave has "
-              . "$seconds_behind_master second(s) behind master host.";
-        }
-        else {
-            goodprint "$is up to date with master.";
-        }
-    }
+    my $is        = "This replication slave is";
+    my $read_only = "$is running with the read_only option";
+    ok( $myvar{read_only} ne 'OFF', "$read_only enabled.",
+        "$read_only disabled." );
+
+    ok( $seconds_behind_master <= 0, "$is up to date with master.",
+        "$is lagging and slave has "
+          . "$seconds_behind_master second(s) behind master host." );
 }
 
 # Checks for supported or EOL'ed MySQL versions
@@ -1567,14 +1567,10 @@ sub _check_architecture {
       or ( `uname` =~ /Darwin/ and `uname -m` =~ /x86_64/ );
 
     $arch = 32;
-    if ( $physical_memory > 2147483648 ) {
-        badprint
-          "Switch to 64-bit OS - MySQL cannot currently use all of your RAM";
-    }
-    else {
-        goodprint "Operating on 32-bit architecture with less than 2GB RAM";
-    }
-    return 32;
+    ok( $physical_memory <= 2147483648,
+        "Operating on 32-bit architecture with less than 2GB RAM",
+        "Switch to 64-bit OS - MySQL cannot currently use all of your RAM" );
+    return $arch;
 }
 
 # Start up a ton of storage engine counts/statistics
@@ -1745,8 +1741,7 @@ sub check_storage_engines {
     }
 
     # Fragmented tables
-    if ( $fragtables > 0 ) {
-        badprint "Total fragmented tables: $fragtables";
+    if ( !ok( $fragtables <= 0, "Total fragmented tables: $fragtables" ) ) {
         push @generalrec,
           "Run OPTIMIZE TABLE to defragment tables for better performance";
         my $total_free = 0;
@@ -1759,9 +1754,6 @@ sub check_storage_engines {
         }
         push @generalrec,
           "Total freed space after theses OPTIMIZE TABLE : $total_free Mb";
-    }
-    else {
-        goodprint "Total fragmented tables: $fragtables";
     }
 
     # Auto increments
@@ -2188,27 +2180,18 @@ sub mysql_stats {
         "Maximum possible memory usage: "
       . hr_bytes( $mycalc{max_peak_memory} )
       . " ($mycalc{pct_max_physical_memory}% of installed RAM)";
-    if ( $mycalc{pct_max_physical_memory} > 85 ) {
-        badprint $mem_max_msg;
-        push @generalrec,
-          "Reduce your overall MySQL memory footprint for system stability";
-    }
-    else {
-        goodprint $mem_max_msg;
-    }
+    push @generalrec,
+      "Reduce your overall MySQL memory footprint for system stability"
+      if !ok( $mycalc{pct_max_physical_memory} <= 85, $mem_max_msg );
 
-    if ( $physical_memory <
-        ( $mycalc{max_peak_memory} + get_other_process_memory() ) )
-    {
-        badprint
-          "Overall possible memory usage with other process exceeded memory";
-        push @generalrec,
-          "Dedicated this server to your database for highest performance.";
-    }
-    else {
-        goodprint
-"Overall possible memory usage with other process is compatible with memory available";
-    }
+    my $overall_mem = "Overall possible memory usage with other process";
+    push @generalrec,
+      "Dedicated this server to your database for highest performance."
+      if !ok(
+        $physical_memory >=
+          ( $mycalc{max_peak_memory} + get_other_process_memory() ),
+        "$overall_mem is compatible with memory available",
+        "$overall_mem exceeded memory" );
 
     # Slow queries
     my $slow_msg =
