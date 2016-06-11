@@ -299,25 +299,22 @@ sub usage {
 
 # Functions that handle the print styles
 sub prettyprint {
-    print $_[0] . "\n" unless ( $opt{silent} or $opt{json} );
-    print $fh $_[0] . "\n" if defined($fh);
+    print "$_[0]\n" if !$opt{silent} and !$opt{json};
+    print $fh "$_[0]\n" if defined $fh;
 }
-sub goodprint  { prettyprint $good. " " . $_[0] unless ( $opt{nogood} == 1 ); }
-sub infoprint  { prettyprint $info. " " . $_[0] unless ( $opt{noinfo} == 1 ); }
-sub badprint   { prettyprint $bad. " " . $_[0]  unless ( $opt{nobad} == 1 ); }
-sub debugprint { prettyprint $deb. " " . $_[0]  unless ( $opt{debug} == 0 ); }
-
-sub redwrap {
-    return ( $opt{nocolor} == 0 ) ? "\e[0;31m" . $_[0] . "\e[0m" : $_[0];
-}
-
-sub greenwrap {
-    return ( $opt{nocolor} == 0 ) ? "\e[0;32m" . $_[0] . "\e[0m" : $_[0];
-}
-sub cmdprint { prettyprint $cmd. " " . $_[0] . $end; }
+sub goodprint  { prettyprint "$good $_[0]" if $opt{nogood} != 1 }
+sub infoprint  { prettyprint "$info $_[0]" if $opt{noinfo} != 1 }
+sub badprint   { prettyprint "$bad $_[0]"  if $opt{nobad} != 1 }
+sub debugprint { prettyprint "$deb $_[0]"  if $opt{debug} != 0 }
+sub redwrap   { $opt{nocolor} == 0 ? "\e[0;31m$_[0]\e[0m" : $_[0] }
+sub greenwrap { $opt{nocolor} == 0 ? "\e[0;32m$_[0]\e[0m" : $_[0] }
+sub cmdprint  { prettyprint "$cmd $_[0]$end" }
 
 sub infoprintml {
-    for my $ln (@_) { $ln =~ s/\n//g; infoprint "\t$ln"; }
+    for my $ln (@_) {
+        $ln =~ s/\n//g;
+        infoprint "\t$ln";
+    }
 }
 
 sub infoprintcmd {
@@ -335,8 +332,8 @@ sub subheaderprint {
 }
 
 sub infoprinthcmd {
-    subheaderprint "$_[0]";
-    infoprintcmd "$_[1]";
+    subheaderprint $_[0];
+    infoprintcmd $_[1];
 }
 
 # Calculates the parameter passed in bytes, then rounds it to one decimal place
@@ -392,8 +389,8 @@ sub pretty_uptime {
 
 # Retrieves the memory installed on this machine
 sub memerror {
-    badprint
-"Unable to determine total memory/swap; use '--forcemem' and '--forceswap'";
+    badprint "Unable to determine total memory/swap; "
+      . "use '--forcemem' and '--forceswap'";
     exit 1;
 }
 
@@ -491,17 +488,12 @@ sub os_setup {
 
 sub get_http_cli {
     my $httpcli = which( "curl", $ENV{PATH} );
-    chomp($httpcli);
-    if ($httpcli) {
-        return $httpcli;
-    }
+    chomp $httpcli;
+    return $httpcli if $httpcli;
 
     $httpcli = which( "wget", $ENV{PATH} );
-    chomp($httpcli);
-    if ($httpcli) {
-        return $httpcli;
-    }
-    return "";
+    chomp $httpcli;
+    return $httpcli ? $httpcli : "";
 }
 
 # Checks for updates to MySQLTuner
@@ -871,34 +863,29 @@ sub report_select_fail {
 
 sub get_tuning_info {
     my @infoconn = select_array "\\s";
-    my ( $tkey, $tval );
     @infoconn =
       grep { !/Threads:/ and !/Connection id:/ and !/pager:/ and !/Using/ }
       @infoconn;
     for my $line (@infoconn) {
-        if ( $line =~ /\s*(.*):\s*(.*)/ ) {
-            debugprint "$1 => $2";
-            $tkey = $1;
-            $tval = $2;
-            chomp($tkey);
-            chomp($tval);
-            $result{'MySQL Client'}{$tkey} = $tval;
-        }
+        next if $line !~ /\s*(.*):\s*(.*)/;
+        debugprint "$1 => $2";
+        my $tkey = $1;
+        my $tval = $2;
+        chomp($tkey);
+        chomp($tval);
+        $result{'MySQL Client'}{$tkey} = $tval;
     }
     $result{'MySQL Client'}{'Client Path'}         = $mysqlcmd;
     $result{'MySQL Client'}{'Admin Path'}          = $mysqladmincmd;
     $result{'MySQL Client'}{'Authentication Info'} = $mysqllogin;
-
 }
 
 # Populates all of the variable and status hashes
 sub arr2hash {
-    my $href = shift;
-    my $harr = shift;
-    my $sep  = shift;
-    $sep = '\s' unless defined($sep);
+    my ( $href, $harr, $sep ) = @_;
+    $sep = '\s' if !defined $sep;
     for my $line (@$harr) {
-        next if ( $line =~ m/^\*\*\*\*\*\*\*/ );
+        next if $line =~ m/^\*\*\*\*\*\*\*/;
         $line =~ /([a-zA-Z_]*)\s*$sep\s*(.*)/;
         $$href{$1} = $2;
         debugprint "V: $1 = $2";
@@ -975,8 +962,8 @@ sub get_all_vars {
 }
 
 sub remove_cr {
-    map { s/\n$//g; } @_;
-    map { s/^\s+$//g; } @_;
+    map { s/\n$//g } @_;
+    map { s/^\s+$//g } @_;
 }
 
 sub remove_empty {
@@ -992,9 +979,7 @@ sub get_file_contents {
     return @lines;
 }
 
-sub get_basic_passwords {
-    return get_file_contents(shift);
-}
+sub get_basic_passwords { get_file_contents(shift) }
 
 sub cve_recommendations {
     subheaderprint "CVE Security Recommendations";
@@ -1008,11 +993,10 @@ sub cve_recommendations {
     open( FH, "<$opt{cvefile}" ) or die "Can't open $opt{cvefile} for read: $!";
     while ( my $cveline = <FH> ) {
         my @cve = split( ';', $cveline );
-        if ( mysql_micro_version_le( $cve[1], $cve[2], $cve[3] ) ) {
-            badprint "$cve[4] : $cve[5]";
-            $result{CVE}{List}{$cvefound} = "$cve[4] : $cve[5]";
-            $cvefound++;
-        }
+        next if !mysql_micro_version_le( $cve[1], $cve[2], $cve[3] );
+        badprint "$cve[4] : $cve[5]";
+        $result{CVE}{List}{$cvefound} = "$cve[4] : $cve[5]";
+        $cvefound++;
     }
     close FH or die "Cannot close $opt{cvefile}: $!";
     $result{CVE}{nb} = $cvefound;
@@ -1037,18 +1021,14 @@ sub get_opened_ports {
 }
 
 sub is_open_port {
-    my $port = shift;
-    if ( grep { /^$port$/ } get_opened_ports ) {
-        return 1;
-    }
-    return 0;
+    my ($port) = @_;
+    return grep( { /^$port$/ } get_opened_ports ) ? 1 : 0;
 }
 
 sub get_process_memory {
-    my $pid = shift;
+    my ($pid) = @_;
     my @mem = `ps -p $pid -o rss`;
-    return 0 if scalar @mem != 2;
-    return $mem[1] * 1024;
+    return scalar @mem != 2 ? 0 : $mem[1] * 1024;
 }
 
 sub get_other_process_memory {
@@ -1065,7 +1045,7 @@ sub get_other_process_memory {
     remove_cr @procs;
     @procs = remove_empty @procs;
     my $totalMemOther = 0;
-    map { $totalMemOther += get_process_memory($_); } @procs;
+    $totalMemOther += get_process_memory($_) for @procs;
     return $totalMemOther;
 }
 
@@ -1142,8 +1122,7 @@ sub get_fs_info() {
 }
 
 sub merge_hash {
-    my $h1     = shift;
-    my $h2     = shift;
+    my ( $h1, $h2 ) = @_;
     my %result = {};
     for my $substanceref ( $h1, $h2 ) {
         while ( my ( $k, $v ) = each %$substanceref ) {
@@ -1164,9 +1143,7 @@ sub infocmd {
     debugprint "CMD: $cmd";
     my @result = `$cmd`;
     remove_cr @result;
-    for my $l (@result) {
-        infoprint "$l";
-    }
+    infoprint "$_" for @result;
 }
 
 sub infocmd_tab {
@@ -1174,9 +1151,7 @@ sub infocmd_tab {
     debugprint "CMD: $cmd";
     my @result = `$cmd`;
     remove_cr @result;
-    for my $l (@result) {
-        infoprint "\t$l";
-    }
+    infoprint "\t$_" for @result;
 }
 
 sub infocmd_one {
@@ -1193,9 +1168,7 @@ sub get_kernel_info() {
         'sunrpc.tcp_max_slot_table_entries', 'sunrpc.tcp_slot_table_entries',
         'vm.swappiness' );
     infoprint "Information about kernel tuning:";
-    for my $param (@params) {
-        infocmd_tab("sysctl $param");
-    }
+    infocmd_tab("sysctl $_") for @params;
     if ( `sysctl -n vm.swappiness` > 10 ) {
         badprint
           "Swappiness is > 10, please consider having a value lower than 10";
@@ -1578,7 +1551,6 @@ sub check_architecture {
     $arch = _check_architecture() || 64;
     goodprint "Operating on 64-bit architecture" if $arch == 64;
     $result{OS}{Architecture} = "$arch bits";
-
 }
 
 sub _check_architecture {
@@ -3553,9 +3525,7 @@ sub make_recommendations {
     }
 }
 
-sub close_outputfile {
-    close($fh) if defined($fh);
-}
+sub close_outputfile { close $fh if defined $fh }
 
 sub headerprint {
     prettyprint
@@ -3565,30 +3535,27 @@ sub headerprint {
 }
 
 sub string2file {
-    my $filename = shift;
-    my $content  = shift;
+    my ( $filename, $content ) = @_;
     open my $fh, q(>), $filename
-      or die
-"Unable to open $filename in write mode. Please check permissions for this file or directory";
-    print $fh $content if defined($content);
+      or die "Unable to open $filename in write mode. "
+      . "Please check permissions for this file or directory";
+    print $fh $content if defined $content;
     close $fh;
-    debugprint $content if ( $opt{debug} );
+    debugprint $content if $opt{debug};
 }
 
 sub file2array {
-    my $filename = shift;
-    debugprint "* reading $filename" if ( $opt{debug} );
+    my ( $filename, $content ) = @_;
+    debugprint "* reading $filename" if $opt{debug};
     my $fh;
-    open( $fh, q(<), "$filename" )
+    open $fh, q(<), "$filename"
       or die "Couldn't open $filename for reading: $!\n";
     my @lines = <$fh>;
-    close($fh);
+    close $fh;
     return @lines;
 }
 
-sub file2string {
-    return join( '', file2array(@_) );
-}
+sub file2string { join( '', file2array(@_) ) }
 
 sub dump_result {
     if ( $opt{debug} ) {
@@ -3634,14 +3601,11 @@ sub dump_result {
 }
 
 sub which {
-    my $prog_name   = shift;
-    my $path_string = shift;
-    my @path_array  = split /:/, $ENV{PATH};
+    my ( $prog_name, $path_string ) = @_;
+    my @path_array = split /:/, $ENV{PATH};
 
     for my $path (@path_array) {
-        if ( -x "$path/$prog_name" ) {
-            return "$path/$prog_name";
-        }
+        return "$path/$prog_name" if -x "$path/$prog_name";
     }
 
     return 0;
