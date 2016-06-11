@@ -727,7 +727,6 @@ sub mysql_setup {
     }
 
     if ( -r "/etc/psa/.psa.shadow" and $doremote == 0 ) {
-
         # It's a Plesk box, use the available credentials
         $mysqllogin = "-u admin -p`cat /etc/psa/.psa.shadow`";
         my $loginstatus = `$mysqladmincmd ping $mysqllogin 2>&1`;
@@ -744,7 +743,6 @@ sub mysql_setup {
     }
 
     if ( -r "/usr/local/directadmin/conf/mysql.conf" and $doremote == 0 ) {
-
         # It's a DirectAdmin box, use the available credentials
         my $mysqluser =
           `cat /usr/local/directadmin/conf/mysql.conf | egrep '^user=.*'`;
@@ -767,7 +765,6 @@ sub mysql_setup {
     }
 
     if ( -r "/etc/mysql/debian.cnf" and $doremote == 0 ) {
-
         # We have a debian maintenance account, use it
         $mysqllogin = "--defaults-file=/etc/mysql/debian.cnf";
         my $loginstatus = `$mysqladmincmd $mysqllogin ping 2>&1`;
