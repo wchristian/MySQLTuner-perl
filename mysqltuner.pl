@@ -911,7 +911,7 @@ sub arr2hash {
 sub get_all_vars {
     # We need to initiate at least one query so that our data is useable
     $dummyselect = select_one "SELECT VERSION()";
-    debugprint "VERSION: " . $dummyselect . "";
+    debugprint "VERSION: $dummyselect";
     $result{'MySQL Client'}{Version} = $dummyselect;
 
     my @mysqlvarlist =
@@ -1903,10 +1903,10 @@ sub calculations {
     $mycalc{pct_max_physical_memory} =
       percentage( $mycalc{max_peak_memory}, $physical_memory );
 
-    debugprint "Max Used Memory: " . hr_bytes( $mycalc{max_used_memory} ) . "";
+    debugprint "Max Used Memory: " . hr_bytes( $mycalc{max_used_memory} );
     debugprint "Max Used Percentage RAM: $mycalc{pct_max_used_memory}%";
 
-    debugprint "Max Peak Memory: " . hr_bytes( $mycalc{max_peak_memory} ) . "";
+    debugprint "Max Peak Memory: " . hr_bytes( $mycalc{max_peak_memory} );
     debugprint "Max Peak Percentage RAM: "
       . $mycalc{pct_max_physical_memory} . "%";
 
@@ -1925,10 +1925,9 @@ sub calculations {
     # Aborted Connections
     $mycalc{pct_connections_aborted} =
       percentage( $mystat{Aborted_connects}, $mystat{Connections} );
-    debugprint "Aborted_connects: " . $mystat{Aborted_connects} . "";
-    debugprint "Connections: " . $mystat{Connections} . "";
-    debugprint "pct_connections_aborted: "
-      . $mycalc{pct_connections_aborted} . "";
+    debugprint "Aborted_connects: $mystat{Aborted_connects}";
+    debugprint "Connections: $mystat{Connections}";
+    debugprint "pct_connections_aborted: $mycalc{pct_connections_aborted}";
 
     # Key buffers
     $mycalc{pct_key_buffer_used} =
@@ -3115,27 +3114,27 @@ sub mysql_innodb {
         infoprint "InnoDB Buffers";
         if ( defined $myvar{innodb_buffer_pool_size} ) {
             infoprint " +-- InnoDB Buffer Pool: "
-              . hr_bytes( $myvar{innodb_buffer_pool_size} ) . "";
+              . hr_bytes( $myvar{innodb_buffer_pool_size} );
         }
         if ( defined $myvar{innodb_buffer_pool_instances} ) {
             infoprint " +-- InnoDB Buffer Pool Instances: "
-              . $myvar{innodb_buffer_pool_instances} . "";
+              . $myvar{innodb_buffer_pool_instances};
         }
         if ( defined $myvar{innodb_additional_mem_pool_size} ) {
             infoprint " +-- InnoDB Additional Mem Pool: "
-              . hr_bytes( $myvar{innodb_additional_mem_pool_size} ) . "";
+              . hr_bytes( $myvar{innodb_additional_mem_pool_size} );
         }
         if ( defined $myvar{innodb_log_buffer_size} ) {
             infoprint " +-- InnoDB Log Buffer: "
-              . hr_bytes( $myvar{innodb_log_buffer_size} ) . "";
+              . hr_bytes( $myvar{innodb_log_buffer_size} );
         }
         if ( defined $mystat{Innodb_buffer_pool_pages_free} ) {
             infoprint " +-- InnoDB Log Buffer Free: "
-              . hr_bytes( $mystat{Innodb_buffer_pool_pages_free} ) . "";
+              . hr_bytes( $mystat{Innodb_buffer_pool_pages_free} );
         }
         if ( defined $mystat{Innodb_buffer_pool_pages_total} ) {
             infoprint " +-- InnoDB Log Buffer Used: "
-              . hr_bytes( $mystat{Innodb_buffer_pool_pages_total} ) . "";
+              . hr_bytes( $mystat{Innodb_buffer_pool_pages_total} );
         }
     }
 
@@ -3285,16 +3284,16 @@ sub mysql_databases {
       );
     infoprint "All Databases:";
     infoprint " +-- TABLE : "
-      . ( $totaldbinfo[4] eq 'NULL' ? 0 : $totaldbinfo[4] ) . "";
+      . ( $totaldbinfo[4] eq 'NULL' ? 0 : $totaldbinfo[4] );
     infoprint " +-- ROWS  : "
-      . ( $totaldbinfo[0] eq 'NULL' ? 0 : $totaldbinfo[0] ) . "";
+      . ( $totaldbinfo[0] eq 'NULL' ? 0 : $totaldbinfo[0] );
     infoprint " +-- DATA  : "
       . hr_bytes( $totaldbinfo[1] ) . "("
       . percentage( $totaldbinfo[1], $totaldbinfo[3] ) . "%)";
     infoprint " +-- INDEX : "
       . hr_bytes( $totaldbinfo[2] ) . "("
       . percentage( $totaldbinfo[2], $totaldbinfo[3] ) . "%)";
-    infoprint " +-- SIZE  : " . hr_bytes( $totaldbinfo[3] ) . "";
+    infoprint " +-- SIZE  : " . hr_bytes( $totaldbinfo[3] );
     infoprint " +-- COLLA : "
       . ( $totaldbinfo[5] eq 'NULL' ? 0 : $totaldbinfo[5] ) . " ("
       . (
@@ -3339,10 +3338,7 @@ sub mysql_databases {
         next unless defined $dbinfo[0];
         infoprint "Database: $dbinfo[0]";
         infoprint " +-- TABLE: "
-          . (
-            !defined( $dbinfo[6] )
-              or $dbinfo[6] eq 'NULL' ? 0 : $dbinfo[6] )
-          . "";
+          . ( !defined( $dbinfo[6] ) or $dbinfo[6] eq 'NULL' ? 0 : $dbinfo[6] );
         infoprint " +-- COLL : "
           . ( $dbinfo[7] eq 'NULL' ? 0 : $dbinfo[7] ) . " ("
           . (
@@ -3352,17 +3348,14 @@ sub mysql_databases {
             ) )
           . ")";
         infoprint " +-- ROWS : "
-          . (
-            !defined( $dbinfo[1] )
-              or $dbinfo[1] eq 'NULL' ? 0 : $dbinfo[1] )
-          . "";
+          . ( !defined( $dbinfo[1] ) or $dbinfo[1] eq 'NULL' ? 0 : $dbinfo[1] );
         infoprint " +-- DATA : "
           . hr_bytes( $dbinfo[2] ) . "("
           . percentage( $dbinfo[2], $dbinfo[4] ) . "%)";
         infoprint " +-- INDEX: "
           . hr_bytes( $dbinfo[3] ) . "("
           . percentage( $dbinfo[3], $dbinfo[4] ) . "%)";
-        infoprint " +-- TOTAL: " . hr_bytes( $dbinfo[4] ) . "";
+        infoprint " +-- TOTAL: " . hr_bytes( $dbinfo[4] );
         infoprint " +-- ENGIN : "
           . ( $dbinfo[8] eq 'NULL' ? 0 : $dbinfo[8] ) . " ("
           . (
@@ -3496,7 +3489,7 @@ ENDSQL
     for (@idxinfo) {
         debugprint "$_";
         my @info = split /\s/;
-        infoprint "Index: " . $info[1] . "";
+        infoprint "Index: $info[1]";
 
         infoprint " +-- COLUNM      : $info[0]";
         infoprint " +-- NB SEQS     : $info[2] sequence(s)";
@@ -3547,7 +3540,7 @@ sub make_recommendations {
     subheaderprint "Recommendations";
     if ( @generalrec > 0 ) {
         prettyprint "General recommendations:";
-        for (@generalrec) { prettyprint "    " . $_ . ""; }
+        for (@generalrec) { prettyprint "    $_"; }
     }
     if ( @adjvars > 0 ) {
         prettyprint "Variables to adjust:";
@@ -3556,7 +3549,7 @@ sub make_recommendations {
               "  *** MySQL's maximum memory usage is dangerously high ***\n"
               . "  *** Add RAM before increasing MySQL buffer variables ***";
         }
-        for (@adjvars) { prettyprint "    " . $_ . ""; }
+        for (@adjvars) { prettyprint "    $_"; }
     }
     if ( @generalrec == 0 && @adjvars == 0 ) {
         prettyprint "No additional performance recommendations are available.";
